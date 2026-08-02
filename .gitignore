@@ -1,0 +1,19 @@
+node_modules/
+.next/
+out/
+dist/
+.env.local
+.env*.local
+*.log
+.DS_Store
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Internal working notes and heavy build artifacts stay local
+info/
+vendor/
+.claude/
+packages/scaffold-zec/public/webzjs/
+
+# Local database
+packages/scaffold-zec/.data/
