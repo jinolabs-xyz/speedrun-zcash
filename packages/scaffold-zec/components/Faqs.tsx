@@ -94,7 +94,7 @@ export function Faqs() {
       <p className="hint m-0">
         Still stuck? Open an issue on{' '}
         <a
-          href="https://github.com/Giri-Aayush/speedrun-zcash/issues"
+          href="https://github.com/jinolabs-xyz/speedrun-zcash/issues"
           target="_blank"
           rel="noreferrer"
           style={{ color: 'var(--accent)' }}

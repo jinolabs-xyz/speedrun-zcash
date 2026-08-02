@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { name: 'Wallet', href: '/wallet' },
   {
     name: 'GitHub ↗',
-    href: 'https://github.com/Giri-Aayush/speedrun-zcash',
+    href: 'https://github.com/jinolabs-xyz/speedrun-zcash',
     external: true,
   },
 ];

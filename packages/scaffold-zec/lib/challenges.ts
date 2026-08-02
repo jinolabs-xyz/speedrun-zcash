@@ -658,7 +658,7 @@ export const challenges: Challenge[] = [
     skills: ['Product design', 'WebZjs integration', 'Ecosystem grants'],
     codebase: {
       name: 'Scaffold-ZEC',
-      repo: 'https://github.com/Giri-Aayush/speedrun-zcash',
+      repo: 'https://github.com/jinolabs-xyz/speedrun-zcash',
       whatItDoes:
         'The starter kit this whole site runs on, Next.js wired to the WebZjs wallet. Fork it, strip it down, and build your idea on top.',
     },

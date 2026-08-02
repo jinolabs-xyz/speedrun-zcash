@@ -1,4 +1,4 @@
-const REPO = 'https://github.com/Giri-Aayush/speedrun-zcash';
+const REPO = 'https://github.com/jinolabs-xyz/speedrun-zcash';
 
 /**
  * Site-chrome status, shown as announcement pills (a leading tag chip plus a

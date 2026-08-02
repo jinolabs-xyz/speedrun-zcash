@@ -142,7 +142,7 @@ export default function Home() {
           id="open-source"
           action={{
             label: 'github ↗',
-            href: 'https://github.com/Giri-Aayush/speedrun-zcash',
+            href: 'https://github.com/jinolabs-xyz/speedrun-zcash',
           }}
         >
           Free and open source under MIT. That covers the challenges, the

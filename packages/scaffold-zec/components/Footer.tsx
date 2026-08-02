@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { BuyMeACoffee } from './BuyMeACoffee';
 
-const REPO = 'https://github.com/Giri-Aayush/speedrun-zcash';
+const REPO = 'https://github.com/jinolabs-xyz/speedrun-zcash';
 const AUTHOR = 'https://github.com/Giri-Aayush';
 
 /** Every destination here is real — no placeholder privacy or terms pages. */
