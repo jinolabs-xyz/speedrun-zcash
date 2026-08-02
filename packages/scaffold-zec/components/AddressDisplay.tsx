@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button, Card, Link } from '@heroui/react';
 import { useWebZjs } from '../lib/WebZjsProvider';
+import { saplingAddressFromUnified } from '../lib/saplingAddress';
 import { shortenAddress } from '../lib/zec';
 
 function CopyRow({
@@ -47,7 +48,10 @@ function CopyRow({
 }
 
 export function AddressDisplay() {
-  const { unifiedAddress, transparentAddress } = useWebZjs();
+  const { unifiedAddress, transparentAddress, network } = useWebZjs();
+  const saplingAddress = unifiedAddress
+    ? saplingAddressFromUnified(unifiedAddress, network)
+    : null;
 
   return (
     <Card>
@@ -55,6 +59,7 @@ export function AddressDisplay() {
         <Card.Title className="eyebrow">Receive</Card.Title>
       </Card.Header>
       <Card.Content className="flex flex-col gap-4">
+        <CopyRow label="Sapling · shielded" value={saplingAddress} />
         <CopyRow label="Unified · shielded" value={unifiedAddress} />
         <CopyRow
           label="Transparent · visible"
@@ -64,15 +69,17 @@ export function AddressDisplay() {
         <p className="hint m-0">
           Fund it from the{' '}
           <Link
-            href="https://faucet.zecpages.com/"
+            href="https://fauzec.com/"
             target="_blank"
             rel="noreferrer"
             className="text-[length:inherit]"
             style={{ color: 'var(--accent)' }}
           >
             testnet faucet
-          </Link>
-          . Anything the transparent address touches is public forever.
+          </Link>{' '}
+          using the Sapling address. Payments to the unified address land in
+          the new Ironwood pool, which this wallet can&apos;t scan yet.
+          Anything the transparent address touches is public forever.
         </p>
       </Card.Content>
     </Card>

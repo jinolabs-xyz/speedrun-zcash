@@ -126,7 +126,7 @@ export const challenges: Challenge[] = [
         id: 'fund',
         title: 'Get testnet ZEC from the faucet',
         detail:
-          'Copy your unified address and request TAZ from a testnet faucet, then wait for the wallet to sync it. Testnet coins are worthless, which makes them perfect for breaking things.',
+          'Copy your Sapling address and request TAZ from a testnet faucet, then wait for the wallet to sync it. Drips to the unified address end up in the new Ironwood pool that this wallet cannot scan yet, so Sapling is the one to use. Testnet coins are worthless, which makes them perfect for breaking things.',
         verification: 'chain',
       },
       {

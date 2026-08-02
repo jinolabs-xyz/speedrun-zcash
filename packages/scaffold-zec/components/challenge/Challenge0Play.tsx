@@ -189,13 +189,13 @@ export function Challenge0Play({ challenge }: { challenge: Challenge }) {
                 )}
                 {step.id === 'fund' && (
                   <Link
-                    href="https://faucet.zecpages.com/"
+                    href="https://fauzec.com/"
                     target="_blank"
                     rel="noreferrer"
                     className="mono self-start text-[12.5px]"
                     style={{ color: 'var(--accent)' }}
                   >
-                    faucet.zecpages.com ↗
+                    fauzec.com ↗
                   </Link>
                 )}
               </div>
