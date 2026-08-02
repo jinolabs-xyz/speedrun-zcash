@@ -15,7 +15,7 @@ const MAIN_LINKS = [
 const META_LINKS = [
   { href: `${REPO}/blob/master/LICENSE`, label: 'MIT License' },
   { href: 'https://z.cash', label: 'Zcash' },
-  { href: 'https://faucet.zecpages.com/', label: 'Testnet faucet' },
+  { href: 'https://fauzec.com/', label: 'Testnet faucet' },
 ];
 
 function GithubMark() {
