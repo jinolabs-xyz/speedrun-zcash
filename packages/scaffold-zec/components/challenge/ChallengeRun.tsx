@@ -51,12 +51,21 @@ const DONE_LABEL = {
 export function ChallengeRun({ challenge }: { challenge: Challenge }) {
   const cli = challenge.embeddedWallet === false;
   const { status, listTransactions } = useWebZjs();
-  const { builderId, submitStep, isComplete } = useBuilder();
+  const { builderId, submitStep, isComplete, completions } = useBuilder();
   const [pending, setPending] = useState<string | null>(null);
   const [rejection, setRejection] = useState<string | null>(null);
   const [txids, setTxids] = useState<Record<string, string>>({});
 
   const done = (stepId: string) => isComplete(challenge.slug, stepId);
+  // The stored verdict for a step that failed verification — rejection
+  // feedback is part of the record now, not a toast that dies with the tab.
+  const rejectedRecord = (stepId: string) =>
+    completions.find(
+      (c) =>
+        c.challengeSlug === challenge.slug &&
+        c.stepId === stepId &&
+        c.status === 'rejected',
+    );
   const completed = challenge.steps.filter((s) => done(s.id)).length;
   const allDone =
     challenge.steps.length > 0 && completed === challenge.steps.length;
@@ -66,7 +75,9 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
     setRejection(null);
     try {
       const result = await submitStep(challenge.slug, stepId, evidence);
-      if (!result.ok) setRejection(result.reason ?? 'not confirmed');
+      if (!result.ok && !result.stored) {
+        setRejection(result.reason ?? 'not confirmed');
+      }
     } finally {
       setPending(null);
     }
@@ -99,7 +110,9 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
       const result = await submitStep(challenge.slug, stepId, {
         txid: mined.txid,
       });
-      if (!result.ok) setRejection(result.reason ?? 'not confirmed');
+      if (!result.ok && !result.stored) {
+        setRejection(result.reason ?? 'not confirmed');
+      }
     } finally {
       setPending(null);
     }
@@ -150,7 +163,17 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
                       {DONE_LABEL[step.verification]}
                     </Chip>
                   )}
+                  {!done(step.id) && rejectedRecord(step.id) && (
+                    <Chip size="sm" variant="soft" color="danger" className="mono">
+                      rejected
+                    </Chip>
+                  )}
                 </div>
+                {!done(step.id) && rejectedRecord(step.id)?.feedback && (
+                  <p className="m-0 text-[13px] leading-[1.5]" style={{ color: 'var(--danger)' }}>
+                    {rejectedRecord(step.id)!.feedback}
+                  </p>
+                )}
                 <p className="m-0 text-[14px] leading-[1.6] muted">
                   {step.detail}
                 </p>

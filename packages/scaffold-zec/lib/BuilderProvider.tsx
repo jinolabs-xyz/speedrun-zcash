@@ -32,6 +32,8 @@ export interface Completion {
   stepId: string;
   verification: 'attested' | 'chain' | 'memo';
   evidence: string | null;
+  status: 'accepted' | 'rejected';
+  feedback: string | null;
   createdAt: number;
 }
 
@@ -63,7 +65,7 @@ export interface BuilderApi {
     challengeSlug: string,
     stepId: string,
     evidence?: { txid?: string },
-  ) => Promise<{ ok: boolean; reason?: string }>;
+  ) => Promise<{ ok: boolean; reason?: string; stored?: boolean }>;
   isComplete: (challengeSlug: string, stepId: string) => boolean;
 }
 
@@ -152,7 +154,17 @@ export function BuilderProvider({ children }: { children: React.ReactNode }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) return { ok: false, reason: data.error ?? 'rejected' };
-      setCompletions(data.completions ?? []);
+      const next: Completion[] = data.completions ?? [];
+      setCompletions(next);
+      // A rejection is a 200 with a stored verdict now, not an error code.
+      const record = next.find(
+        (c) => c.challengeSlug === challengeSlug && c.stepId === stepId,
+      );
+      if (record?.status === 'rejected') {
+        // stored: the verdict lives on the completion record, so the panel
+        // renders it inline instead of flashing a transient alert.
+        return { ok: false, stored: true, reason: record.feedback ?? 'rejected' };
+      }
       return { ok: true };
     },
     [builderId],
@@ -161,7 +173,10 @@ export function BuilderProvider({ children }: { children: React.ReactNode }) {
   const isComplete = useCallback(
     (challengeSlug: string, stepId: string) =>
       completions.some(
-        (c) => c.challengeSlug === challengeSlug && c.stepId === stepId,
+        (c) =>
+          c.challengeSlug === challengeSlug &&
+          c.stepId === stepId &&
+          c.status === 'accepted',
       ),
     [completions],
   );
