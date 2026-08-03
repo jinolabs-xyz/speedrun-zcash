@@ -56,7 +56,10 @@ git checkout --quiet "$WEBZJS_REV"
 rustup toolchain install "$(grep -o 'nightly-[0-9-]*' rust-toolchain.toml)" \
   --component rust-src --target wasm32-unknown-unknown
 
-# macOS: Apple clang can't target wasm32. Prefer Homebrew LLVM, else zig cc.
+# macOS: Apple clang cannot target wasm32. Prefer Homebrew LLVM, else zig cc
+# (zig 0.13.0 confirmed working for the secp256k1 wasm32 build, 2026-08-03;
+# brew install zig is blocked by the untrusted mongodb tap — use the
+# standalone tarball from ziglang.org).
 if [[ "$(uname)" == "Darwin" ]]; then
   if [[ -x /opt/homebrew/opt/llvm/bin/clang ]]; then
     export CC_wasm32_unknown_unknown=/opt/homebrew/opt/llvm/bin/clang
