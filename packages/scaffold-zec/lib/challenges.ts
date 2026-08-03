@@ -531,6 +531,7 @@ export const challenges: Challenge[] = [
         heading: 'Which payment is which?',
         body: [
           'All incoming payments land shielded and look identical, so how do you match a payment to order #42? The memo is your order ID. The ZIP-321 URI you hand the customer includes memo=order-42, the customer’s wallet sends it back inside the sealed envelope, and your scanner routes the payment to the right order. Private on the outside, structured on the inside.',
+          'One thing to get right before you take a single order. A customer paying your unified address now lands the money in the Ironwood pool, so your scanner has to be a version that knows that pool exists. An older one syncs happily, decrypts nothing, and reports no sales while your customers insist they paid. That is the same blindness the earlier challenges warned about, except here it looks like lost revenue.',
         ],
       },
     ],
@@ -546,7 +547,7 @@ export const challenges: Challenge[] = [
         id: 'detect',
         title: 'Detect payment with a viewing key',
         detail:
-          'Run a watch-only scanner on the store’s viewing key that spots the incoming payment and matches the memo to the open order. No spend keys anywhere near the server.',
+          'Prove the idea before you write the scanner. Export your store wallet’s viewing key, load it into a second wallet, and watch that wallet see the order payment and its memo while having no way to spend. That is your whole detection design, running, in two commands. Then build the scanner that does it on the server, with no spend keys anywhere near it.',
         verification: 'attested',
       },
       {
