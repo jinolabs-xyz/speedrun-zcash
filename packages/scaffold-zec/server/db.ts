@@ -310,3 +310,43 @@ export async function hasObservedTxid(
     .first<{ seen: number }>();
   return row !== null;
 }
+
+export interface PublicProfile {
+  builderId: string;
+  joinedAt: number;
+  /** Accepted steps only, and deliberately without evidence txids — see
+   *  the profile route for why linking a pseudonym to on-chain activity
+   *  would undo the point of the pseudonym. */
+  completions: { challengeSlug: string; stepId: string; createdAt: number }[];
+}
+
+export async function getPublicProfile(
+  builderId: string,
+): Promise<PublicProfile | null> {
+  const db = await migrated();
+  const builder = await db
+    .prepare('SELECT created_at FROM builders WHERE id = ?')
+    .bind(builderId)
+    .first<{ created_at: number }>();
+  if (!builder) return null;
+
+  const { results } = await db
+    .prepare(
+      `SELECT challenge_slug, step_id, created_at
+       FROM completions
+       WHERE builder_id = ? AND status = 'accepted'
+       ORDER BY created_at`,
+    )
+    .bind(builderId)
+    .all<{ challenge_slug: string; step_id: string; created_at: number }>();
+
+  return {
+    builderId,
+    joinedAt: builder.created_at,
+    completions: results.map((row) => ({
+      challengeSlug: row.challenge_slug,
+      stepId: row.step_id,
+      createdAt: row.created_at,
+    })),
+  };
+}
