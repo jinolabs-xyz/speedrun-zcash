@@ -13,6 +13,11 @@
  *   CHALLENGE_WALLET_DIR  wallet directory (default ~/.speedrun-zcash/challenge-wallet)
  *   DEVTOOL_BIN           path to the zcash-devtool binary
  *   DATABASE_PATH         app DB (default .data/speedrun.db, same as server/db.ts)
+ *
+ * Against production the proofs go over HTTP instead — the wallet box holds
+ * no Cloudflare credentials, and the authed route can only insert memo rows:
+ *   MEMO_PROOFS_URL       e.g. https://speedrun-zcash.example.workers.dev/api/memo-proofs
+ *   MEMO_INGEST_TOKEN     bearer secret matching the Worker's MEMO_INGEST_TOKEN
  */
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
@@ -78,6 +83,47 @@ function decodeMemo(bytes) {
   }
 }
 
+const proofs = [];
+for (const row of rows) {
+  const memo = decodeMemo(row.memo);
+  if (memo === null) continue;
+  proofs.push({
+    txid: displayTxid(row.txid),
+    builderId: memo.startsWith(MEMO_PREFIX)
+      ? memo.slice(MEMO_PREFIX.length).trim()
+      : null,
+    memo,
+    minedHeight: row.tx_mined_height ?? null,
+    value: row.value,
+  });
+}
+
+const remoteUrl = process.env.MEMO_PROOFS_URL;
+if (remoteUrl) {
+  const token = process.env.MEMO_INGEST_TOKEN;
+  if (!token) {
+    console.error('MEMO_PROOFS_URL is set but MEMO_INGEST_TOKEN is not');
+    process.exit(1);
+  }
+  const res = await fetch(remoteUrl, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ proofs }),
+  });
+  if (!res.ok) {
+    console.error(`ingest endpoint replied ${res.status}: ${await res.text()}`);
+    process.exit(1);
+  }
+  const reply = await res.json();
+  console.log(
+    `recorded ${reply.recorded} memo output(s) remotely from ${rows.length} candidate row(s)`,
+  );
+  process.exit(0);
+}
+
 const app = new Database(appDbPath);
 // The app may be serving requests while this runs; without a timeout a
 // write collision surfaces as an immediate SQLITE_BUSY throw.
@@ -103,23 +149,11 @@ const upsert = app.prepare(
      mined_height = excluded.mined_height`,
 );
 
-let recorded = 0;
-for (const row of rows) {
-  const memo = decodeMemo(row.memo);
-  if (memo === null) continue;
-  const builderId = memo.startsWith(MEMO_PREFIX)
-    ? memo.slice(MEMO_PREFIX.length).trim()
-    : null;
-  upsert.run(
-    displayTxid(row.txid),
-    builderId,
-    memo,
-    row.tx_mined_height ?? null,
-    row.value,
-    Date.now(),
-  );
-  recorded++;
+for (const p of proofs) {
+  upsert.run(p.txid, p.builderId, p.memo, p.minedHeight, p.value, Date.now());
 }
 app.close();
 
-console.log(`recorded ${recorded} memo output(s) from ${rows.length} candidate row(s)`);
+console.log(
+  `recorded ${proofs.length} memo output(s) locally from ${rows.length} candidate row(s)`,
+);

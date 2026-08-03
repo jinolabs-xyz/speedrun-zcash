@@ -34,3 +34,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # A deploy that ships a broken Worker should fail THIS run, not greet
+      # the next learner. /api/me proves the Worker, Next routing, and D1;
+      # the wasm HEAD proves the R2 + edge-cache path the wallet boots from.
+      - name: Smoke-test production
+        run: |
+          sleep 10
+          curl -fsS --max-time 30 https://speedrun-zcash.aayushgiri1234.workers.dev/api/me > /dev/null
+          curl -fsSI --max-time 60 https://speedrun-zcash.aayushgiri1234.workers.dev/webzjs/webzjs_wallet_bg.wasm | grep -qi 'content-type: application/wasm'
