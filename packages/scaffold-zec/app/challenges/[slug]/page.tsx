@@ -7,6 +7,7 @@ import { Alert, Chip, Surface } from '@heroui/react';
 import { getChallenge, formatEstMinutes } from '../../../lib/challenges';
 import { WalletBoot } from '../../../components/WalletBoot';
 import { Notice } from '../../../components/Notice';
+import { CommandBlock } from '../../../components/CommandBlock';
 import { ChallengeRun } from '../../../components/challenge/ChallengeRun';
 
 export default function ChallengePage({
@@ -86,11 +87,15 @@ export default function ChallengePage({
       {challenge.lesson.map((section) => (
         <section key={section.heading} className="flex flex-col gap-3">
           <h2 className="card-title">{section.heading}</h2>
-          {section.body.map((paragraph, i) => (
-            <p key={i} className="m-0 text-[15px] leading-[1.7] muted">
-              {paragraph}
-            </p>
-          ))}
+          {section.body.map((block, i) =>
+            typeof block === 'string' ? (
+              <p key={i} className="m-0 text-[15px] leading-[1.7] muted">
+                {block}
+              </p>
+            ) : (
+              <CommandBlock key={i} cmd={block.cmd} expect={block.expect} />
+            ),
+          )}
         </section>
       ))}
 

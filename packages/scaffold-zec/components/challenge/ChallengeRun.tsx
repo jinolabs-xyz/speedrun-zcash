@@ -7,6 +7,7 @@ import { CHALLENGE_MEMO_ADDRESS } from '../../lib/challenges';
 import { useWebZjs } from '../../lib/WebZjsProvider';
 import { useBuilder } from '../../lib/BuilderProvider';
 import { ConnectBuilder } from '../ConnectBuilder';
+import { CommandBlock } from '../CommandBlock';
 import { CreateWallet } from '../CreateWallet';
 import { AddressDisplay } from '../AddressDisplay';
 import { ShieldedBalance } from '../ShieldedBalance';
@@ -154,16 +155,22 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
                   {step.detail}
                 </p>
                 {!done(step.id) && step.verification === 'memo' && (
-                  <div className="flex flex-col gap-1 rounded-lg p-3" style={{ border: '1px solid var(--hairline)' }}>
-                    <span className="eyebrow">send to</span>
-                    <code className="mono break-all text-[11.5px]">
-                      {CHALLENGE_MEMO_ADDRESS}
-                    </code>
-                    <span className="eyebrow mt-2">with memo</span>
-                    <code className="mono text-[12.5px]">
-                      {builderId ? `srz1:${builderId}` : 'connect your run to see your memo'}
-                    </code>
-                  </div>
+                  builderId ? (
+                    <CommandBlock
+                      cmd={`$DT wallet -w ~/zec-wallet send -i ~/zec-wallet/identity.txt --address ${CHALLENGE_MEMO_ADDRESS} --value 1000000 --memo "srz1:${builderId}"`}
+                      expect="Your exact command, memo included. Copy, run, wait a block, paste the txid it prints."
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-1 rounded-lg p-3" style={{ border: '1px solid var(--hairline)' }}>
+                      <span className="eyebrow">send to</span>
+                      <code className="mono break-all text-[11.5px]">
+                        {CHALLENGE_MEMO_ADDRESS}
+                      </code>
+                      <span className="hint mt-1">
+                        Connect your run above and this becomes a copyable send command with your memo filled in.
+                      </span>
+                    </div>
+                  )
                 )}
                 {!done(step.id) && (
                   <div className="flex flex-wrap items-center gap-3">
