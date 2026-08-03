@@ -185,9 +185,14 @@ export const challenges: Challenge[] = [
       {
         heading: 'Checkpoint 2 · Create your wallet',
         body: [
+          'Make the folder first. The next command writes a key file into it and will not create the folder for you.',
+          {
+            cmd: 'mkdir -p ~/zec-wallet',
+            expect: 'No output, which is how most things go well in a terminal.',
+          },
           {
             cmd: '$DT wallet -w ~/zec-wallet init --name mine -i ~/zec-wallet/identity.txt -n test',
-            expect: 'Creates the ~/zec-wallet folder with a freshly generated, encrypted 24 word seed inside.',
+            expect: 'Prints "Generating a new age identity to encrypt the mnemonic phrase". Your wallet now exists, with a freshly generated 24 word seed encrypted inside it.',
           },
           'That folder IS the wallet. The seed inside it is the secret everything else derives from, and it never leaves your machine. Now pull the chain and look at what you hold.',
           {
@@ -196,7 +201,7 @@ export const challenges: Challenge[] = [
           },
           {
             cmd: '$DT wallet -w ~/zec-wallet balance',
-            expect: 'Every pool shows zero. For now.',
+            expect: 'A dump of internal sync state first, then the part you want at the bottom: every pool at 0.00000000 TAZ. For now.',
           },
           {
             cmd: '$DT wallet -w ~/zec-wallet list-addresses',
@@ -218,6 +223,7 @@ export const challenges: Challenge[] = [
             expect: '0.1 TAZ, listed under Ironwood.',
           },
           'It landed in Ironwood because a modern sender paying a Unified Address prefers the newest pool. You just watched pool selection happen, which most wallet users never see.',
+          'One more wait before the last checkpoint. Money someone else sent you is not spendable the instant it arrives: the wallet wants ten confirmations on it, which on testnet is roughly ten to fifteen minutes. Try to spend sooner and the send fails saying you have insufficient funds, which is confusing, because the balance is right there. The rule exists because spending a note the moment it lands makes your transaction stand out from everyone else\u2019s, and standing out is the one thing a privacy chain cannot afford. Rerun balance until the amount shows as spendable, then continue.',
         ],
       },
       {
@@ -252,7 +258,7 @@ export const challenges: Challenge[] = [
         id: 'send',
         title: 'Send a shielded payment that proves it was you',
         detail:
-          'Send 0.01 TAZ to the challenge address with your builder memo, using send with the exact address and memo shown below. Your machine builds a real zero-knowledge proof, then paste the resulting transaction id. Our wallet decrypts your memo, and that is proof of authorship no explorer copy-paste can fake.',
+          'Send 0.01 TAZ to the challenge address with your builder memo, using the exact command shown below. Wait for your drip to reach ten confirmations first or the send reports insufficient funds. Your machine builds a real zero-knowledge proof, then paste the resulting transaction id. Our wallet decrypts your memo, and that is proof of authorship no explorer copy-paste can fake.',
         verification: 'memo',
       },
     ],
