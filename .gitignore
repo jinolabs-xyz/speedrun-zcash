@@ -11,7 +11,16 @@ next-env.d.ts
 
 # Internal working notes and heavy build artifacts stay local
 info/
-vendor/
+# The wasm/js runtime stays out of git (57 MB, served from R2; rebuild via
+# scripts/vendor-webzjs.sh) but CI needs the package manifest and type
+# declarations, since package.json depends on file:./vendor/webzjs-wallet.
+# Children are excluded rather than the directories themselves because git
+# cannot re-include files under an excluded directory.
+packages/scaffold-zec/vendor/*
+!packages/scaffold-zec/vendor/webzjs-wallet
+packages/scaffold-zec/vendor/webzjs-wallet/*
+!packages/scaffold-zec/vendor/webzjs-wallet/package.json
+!packages/scaffold-zec/vendor/webzjs-wallet/*.d.ts
 .claude/
 packages/scaffold-zec/public/webzjs/
 
