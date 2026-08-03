@@ -98,6 +98,18 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
     setRejection(null);
     try {
       const transactions = await listTransactions();
+      // Tell the server what the wallet has actually seen before verifying —
+      // chain steps on wallet challenges only accept observed txids (#6).
+      const minedTxids = transactions
+        .filter((tx) => tx.blockHeight !== null)
+        .map((tx) => tx.txid);
+      if (minedTxids.length > 0) {
+        await fetch('/api/observed-txids', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ txids: minedTxids.slice(0, 50) }),
+        }).catch(() => {});
+      }
       const mined = transactions.find(
         (tx) => tx.direction === 'sent' && tx.blockHeight !== null,
       );

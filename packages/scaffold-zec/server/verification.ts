@@ -1,6 +1,6 @@
 import { getChallenge } from '../lib/challenges';
 import { lookupTransaction } from './lightwalletd';
-import { getMemoProof } from './db';
+import { getMemoProof, hasObservedTxid } from './db';
 
 export type VerificationResult =
   | { ok: true; verification: 'attested' | 'chain' | 'memo'; evidence: string | null }
@@ -80,6 +80,28 @@ export async function verifyStep(
       };
     }
     return { ok: true, verification: 'memo', evidence: txid };
+  }
+
+  // Embedded-wallet challenges: the txid must be one this builder's
+  // connected wallet actually enumerated (reported ahead of submission by
+  // the run panel). Not authorship proof — the memo flow is — but a pasted
+  // block-explorer txid was never seen by their wallet and stops here.
+  // CLI challenges have no wallet session to observe, so they are exempt
+  // until their steps move to memo proof.
+  if (challenge.embeddedWallet !== false) {
+    const observed = await hasObservedTxid(builderId, txid);
+    if (!observed) {
+      return {
+        ok: false,
+        kind: 'rejected',
+        verification: 'chain',
+        // The wallet may simply not have synced the tx yet; a resubmit
+        // after it appears in the wallet's history will pass.
+        terminal: false,
+        reason:
+          'that transaction has not been seen by your connected wallet — verify from the run panel with the wallet that made it, or wait for it to finish syncing',
+      };
+    }
   }
 
   let lookup;

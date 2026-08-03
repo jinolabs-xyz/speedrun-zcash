@@ -67,6 +67,13 @@ async function ready(): Promise<D1Database> {
         PRIMARY KEY (builder_id, challenge_slug, step_id)
       )`),
     db.prepare(`
+      CREATE TABLE IF NOT EXISTS observed_txids (
+        builder_id TEXT NOT NULL,
+        txid       TEXT NOT NULL,
+        first_seen INTEGER NOT NULL,
+        PRIMARY KEY (builder_id, txid)
+      )`),
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS memo_proofs (
         txid         TEXT PRIMARY KEY,
         builder_id   TEXT,
@@ -270,4 +277,36 @@ export async function listCompletions(builderId: string): Promise<Completion[]> 
     feedback: row.feedback,
     createdAt: row.created_at,
   }));
+}
+
+/**
+ * Which txids a builder's connected wallet has actually enumerated. Chain
+ * verification on embedded-wallet challenges only accepts observed txids —
+ * not cryptographic proof of authorship (that's the memo flow), but it
+ * closes the paste-a-block-explorer-txid hole.
+ */
+export async function recordObservedTxids(
+  builderId: string,
+  txids: string[],
+): Promise<void> {
+  if (txids.length === 0) return;
+  const db = await ready();
+  const stmt = db.prepare(
+    `INSERT INTO observed_txids (builder_id, txid, first_seen)
+     VALUES (?, ?, ?) ON CONFLICT(builder_id, txid) DO NOTHING`,
+  );
+  const now = Date.now();
+  await db.batch(txids.map((txid) => stmt.bind(builderId, txid, now)));
+}
+
+export async function hasObservedTxid(
+  builderId: string,
+  txid: string,
+): Promise<boolean> {
+  const db = await ready();
+  const row = await db
+    .prepare('SELECT 1 AS seen FROM observed_txids WHERE builder_id = ? AND txid = ?')
+    .bind(builderId, txid)
+    .first<{ seen: number }>();
+  return row !== null;
 }
