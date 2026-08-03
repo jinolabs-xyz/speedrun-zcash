@@ -37,6 +37,14 @@ function connect(): Database.Database {
       created_at     INTEGER NOT NULL,
       PRIMARY KEY (builder_id, challenge_slug, step_id)
     );
+    CREATE TABLE IF NOT EXISTS memo_proofs (
+      txid         TEXT PRIMARY KEY,
+      builder_id   TEXT,
+      memo         TEXT NOT NULL,
+      mined_height INTEGER,
+      value        INTEGER NOT NULL,
+      seen_at      INTEGER NOT NULL
+    );
   `);
   return handle;
 }
@@ -48,9 +56,60 @@ function conn(): Database.Database {
 export interface Completion {
   challengeSlug: string;
   stepId: string;
-  verification: 'attested' | 'chain';
+  verification: 'attested' | 'chain' | 'memo';
   evidence: string | null;
   createdAt: number;
+}
+
+export interface MemoProof {
+  txid: string;
+  builderId: string | null;
+  memo: string;
+  minedHeight: number | null;
+  value: number;
+}
+
+/**
+ * Written by scripts/memo-ingest.mjs after syncing the challenge wallet.
+ * builder_id is pre-parsed from the memo at ingest time so verification is a
+ * single indexed lookup; the raw memo is kept for auditing mismatches.
+ */
+export function upsertMemoProof(p: MemoProof): void {
+  conn()
+    .prepare(
+      `INSERT INTO memo_proofs (txid, builder_id, memo, mined_height, value, seen_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(txid) DO UPDATE SET
+         builder_id   = excluded.builder_id,
+         memo         = excluded.memo,
+         mined_height = excluded.mined_height`,
+    )
+    .run(p.txid, p.builderId, p.memo, p.minedHeight, p.value, Date.now());
+}
+
+export function getMemoProof(txid: string): MemoProof | null {
+  const row = conn()
+    .prepare(
+      `SELECT txid, builder_id, memo, mined_height, value
+       FROM memo_proofs WHERE txid = ?`,
+    )
+    .get(txid) as
+    | {
+        txid: string;
+        builder_id: string | null;
+        memo: string;
+        mined_height: number | null;
+        value: number;
+      }
+    | undefined;
+  if (!row) return null;
+  return {
+    txid: row.txid,
+    builderId: row.builder_id,
+    memo: row.memo,
+    minedHeight: row.mined_height,
+    value: row.value,
+  };
 }
 
 export function upsertBuilder(id: string, publicKey: string): void {
@@ -122,7 +181,7 @@ export function listCompletions(builderId: string): Completion[] {
       const row = r as {
         challenge_slug: string;
         step_id: string;
-        verification: 'attested' | 'chain';
+        verification: 'attested' | 'chain' | 'memo';
         evidence: string | null;
         created_at: number;
       };

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid request' }, { status: 400 });
   }
 
-  const result = await verifyStep(challengeSlug, stepId, evidence);
+  const result = await verifyStep(challengeSlug, stepId, evidence, builderId);
   if (!result.ok) {
     return NextResponse.json({ error: result.reason }, { status: 422 });
   }

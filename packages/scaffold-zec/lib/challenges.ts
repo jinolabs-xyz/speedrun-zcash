@@ -10,8 +10,12 @@ export interface ChallengeStep {
    * 'chain' means a txid the server independently looks up on lightwalletd.
    *   Shielded transactions hide amounts and parties, so existence and
    *   inclusion in a block is exactly what can be verified.
+   * 'memo' means the builder sends a shielded memo carrying their builder ID
+   *   to the challenge address, and the server finds it after the challenge
+   *   wallet decrypts it. Unlike 'chain' this proves authorship: only the
+   *   transaction's author can put text in its encrypted memo.
    */
-  verification: 'attested' | 'chain';
+  verification: 'attested' | 'chain' | 'memo';
 }
 
 /**
