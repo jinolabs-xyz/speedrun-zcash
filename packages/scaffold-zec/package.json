@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "sync-webzjs": "rm -rf public/webzjs && cp -R vendor/webzjs-wallet public/webzjs",
+    "sync-webzjs": "if [ -d vendor/webzjs-wallet ]; then rm -rf public/webzjs && cp -R vendor/webzjs-wallet public/webzjs; else echo 'sync-webzjs: vendor/webzjs-wallet missing, skipping (CI builds without the wasm bundle)'; fi",
     "predev": "npm run sync-webzjs",
     "prebuild": "npm run sync-webzjs",
     "dev": "next dev",
