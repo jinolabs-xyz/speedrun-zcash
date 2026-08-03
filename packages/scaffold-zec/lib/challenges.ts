@@ -65,6 +65,13 @@ export interface Challenge {
   tagline: string;
   status: 'live' | 'soon';
   level: Level;
+  /**
+   * Honest sizing, shown before a learner commits. estMinutes is active
+   * time at the keyboard; background waits (node sync, mining) are called
+   * out in the lesson itself, not hidden in this number.
+   */
+  difficulty: 'intro' | 'easy' | 'medium' | 'hard';
+  estMinutes: number;
   skills: string[];
   /**
    * The real ecosystem codebase this challenge introduces. Ten challenges,
@@ -92,6 +99,13 @@ export interface Challenge {
  * builder's ID proves authorship. The matching viewing key lives with the
  * server-side ingest job, never in this repo.
  */
+/** "~45 min" under an hour, "~2 h" and "~1.5 h" above it. */
+export function formatEstMinutes(minutes: number): string {
+  if (minutes < 60) return `~${minutes} min`;
+  const hours = minutes / 60;
+  return `~${Number.isInteger(hours) ? hours : hours.toFixed(1)} h`;
+}
+
 export const CHALLENGE_MEMO_ADDRESS =
   'utest1c0xwdeqrmysuvkztgaf8r4ldpr73vuunxyhumtxn9llhwqzls3clsy3duvjewxa6evtzfyvxjzt0gzxqzt6h4d0vnnhjnlgm65pz88x4gcnazyee8g9mnjdged79k2uhwrgwture7xvmfj5456kp9qume0n6qtqja5phmhhrn4c4c0epe5j750qxzsegts0myny7qvpmth4979u4ysa';
 
@@ -99,6 +113,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'first-shielded-transaction',
     number: 0,
+    difficulty: 'intro',
+    estMinutes: 45,
     emoji: '🏁',
     title: 'First Shielded Transaction',
     tagline:
@@ -156,7 +172,7 @@ export const challenges: Challenge[] = [
         id: 'fund',
         title: 'Get testnet ZEC from the faucet',
         detail:
-          'Paste your Unified Address into the ecosystem faucet and claim a drip. Then run sync until balance shows it arrived, usually within a couple of minutes. The faucet page shows the transaction id of your drip, and that is your evidence here. Testnet coins are worthless, which makes them perfect for breaking things.',
+          'Paste your Unified Address into the ecosystem faucet and claim a drip. A modern sender paying a UA puts the money in the newest pool, so when you run sync and then balance, watch your drip appear under Ironwood. The faucet page shows the transaction id of your drip, and that is your evidence here. Testnet coins are worthless, which makes them perfect for breaking things.',
         verification: 'chain',
       },
       {
@@ -170,14 +186,16 @@ export const challenges: Challenge[] = [
     gotcha: {
       heading: '⚠️ Watch out for transparent leakage',
       body: [
-        'Look up your transparent address in a testnet explorer and every coin it ever touches is public. Now look up your unified address and there is nothing to find. Every Zcash developer internalizes this early. Privacy is a property of the pool the money sits in, and touching the transparent pool leaks metadata even if you shield afterwards.',
-        'A rule of thumb when you build apps. Keep funds shielded end-to-end, and treat every transparent hop as a disclosure event.',
+        'Point the tool at your own address and see what it is made of. Run "zcash-devtool inspect <your UA>" and it lists the receivers bundled inside, including a transparent one starting with t. Look that t-address up in a testnet explorer. If anyone ever pays it, every coin it touches is public forever. Now search the explorer for your shielded funds and there is nothing to find.',
+        'Every Zcash developer internalizes this early. Privacy is a property of the pool the money sits in, and touching the transparent pool leaks metadata even if you shield afterwards. A rule of thumb when you build apps. Keep funds shielded end-to-end, and treat every transparent hop as a disclosure event.',
       ],
     },
   },
   {
     slug: 'watch-the-chain',
     number: 1,
+    difficulty: 'intro',
+    estMinutes: 30,
     emoji: '🔭',
     title: 'Watch the Chain',
     tagline:
@@ -248,6 +266,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'memo-messenger',
     number: 2,
+    difficulty: 'easy',
+    estMinutes: 45,
     emoji: '💬',
     title: 'Memo Messenger',
     tagline:
@@ -316,6 +336,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'build-a-light-wallet',
     number: 3,
+    difficulty: 'medium',
+    estMinutes: 120,
     emoji: '👛',
     title: 'Build a Light Wallet',
     tagline:
@@ -385,6 +407,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'shielded-storefront',
     number: 4,
+    difficulty: 'medium',
+    estMinutes: 120,
     emoji: '🛒',
     title: 'Shielded Storefront',
     tagline:
@@ -453,6 +477,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'viewing-keys-disclosure',
     number: 5,
+    difficulty: 'medium',
+    estMinutes: 90,
     emoji: '🔍',
     title: 'Viewing Keys & Selective Disclosure',
     tagline:
@@ -521,6 +547,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'run-the-stack',
     number: 6,
+    difficulty: 'hard',
+    estMinutes: 180,
     emoji: '🛰️',
     title: 'Run the Stack',
     tagline:
@@ -611,6 +639,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'notes-nullifiers-proofs',
     number: 7,
+    difficulty: 'hard',
+    estMinutes: 120,
     emoji: '⚙️',
     title: 'Notes, Nullifiers & Proofs',
     tagline:
@@ -679,6 +709,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'ship-your-privacy-app',
     number: 8,
+    difficulty: 'hard',
+    estMinutes: 240,
     emoji: '🚀',
     title: 'Ship Your Privacy App',
     tagline:
@@ -747,6 +779,8 @@ export const challenges: Challenge[] = [
   {
     slug: 'first-upstream-contribution',
     number: 9,
+    difficulty: 'hard',
+    estMinutes: 180,
     emoji: '🤝',
     title: 'Your First Upstream Contribution',
     tagline:

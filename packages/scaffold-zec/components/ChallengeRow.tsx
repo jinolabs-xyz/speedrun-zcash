@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Chip } from '@heroui/react';
 import type { Challenge } from '../lib/challenges';
+import { formatEstMinutes } from '../lib/challenges';
 
 export function ChallengeRow({
   challenge,
@@ -24,6 +25,9 @@ export function ChallengeRow({
       <div className="flex min-w-0 flex-col gap-[3px]">
         <span className="text-[16.5px] font-semibold">{challenge.title}</span>
         <span className="text-[13.5px] muted">{challenge.tagline}</span>
+        <span className="mono text-[11.5px]" style={{ color: 'var(--dim)' }}>
+          {challenge.difficulty} · {formatEstMinutes(challenge.estMinutes)}
+        </span>
       </div>
       <Chip
         size="sm"

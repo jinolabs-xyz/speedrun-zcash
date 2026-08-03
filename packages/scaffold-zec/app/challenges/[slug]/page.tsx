@@ -4,7 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Alert, Chip, Surface } from '@heroui/react';
-import { getChallenge } from '../../../lib/challenges';
+import { getChallenge, formatEstMinutes } from '../../../lib/challenges';
 import { WalletBoot } from '../../../components/WalletBoot';
 import { Notice } from '../../../components/Notice';
 import { ChallengeRun } from '../../../components/challenge/ChallengeRun';
@@ -40,7 +40,10 @@ export default function ChallengePage({
           <h1 className="display text-[32px]">{challenge.title}</h1>
         </div>
         <p className="lede">{challenge.tagline}</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip size="sm" variant="soft" color="accent" className="mono">
+            {challenge.difficulty} · {formatEstMinutes(challenge.estMinutes)}
+          </Chip>
           {challenge.skills.map((skill) => (
             <Chip key={skill} size="sm" variant="soft" className="mono">
               {skill}
