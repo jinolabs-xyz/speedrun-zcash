@@ -57,6 +57,19 @@ export const LEVELS: { id: Level; label: string; outcome: string }[] = [
   },
 ];
 
+/**
+ * A lesson paragraph, or a command the learner runs. Commands render as
+ * copyable blocks, Speedrun Ethereum style: nobody should have to fish a
+ * command out of a prose sentence. `expect` is the one-line summary of
+ * what success looks like, shown under the command.
+ */
+export type LessonBlock = string | { cmd: string; expect?: string };
+
+export interface LessonSection {
+  heading: string;
+  body: LessonBlock[];
+}
+
 export interface Challenge {
   slug: string;
   number: number;
@@ -80,7 +93,7 @@ export interface Challenge {
    */
   codebase: { name: string; repo: string; whatItDoes: string };
   /** Lesson sections rendered before the interactive part */
-  lesson: { heading: string; body: string[] }[];
+  lesson: LessonSection[];
   steps: ChallengeStep[];
   gotcha?: { heading: string; body: string[] };
   /**
@@ -135,7 +148,7 @@ export const challenges: Challenge[] = [
         body: [
           'Picture this. Every time you pay for anything, you write the amount, your name, and who you paid on a postcard, then mail it for the whole world to read, forever. That is how most blockchains work. Bitcoin is a public postcard system.',
           'Zcash is money in a sealed envelope. The network can check the envelope is legitimate, that the money is real and nobody is spending the same coin twice, without ever opening it. The trick that makes this possible is called a zero-knowledge proof, a way to prove something is true without revealing why. You are about to use one for real.',
-          'In this challenge you run the loop every Zcash app is built on. Create a wallet from your own terminal, receive some coins, and send a payment nobody can see. The coins are testnet, play money that is deliberately worthless, so nothing can go wrong that matters. No crypto background required, and the tool you install is the same one the core developers use every day.',
+          'This is a command by command walkthrough. Copy each block, run it, check you see what the expected line says, and move on. The coins are testnet, play money that is deliberately worthless, so nothing can go wrong that matters. The tool you are about to install is the same one the Zcash core developers use every day.',
         ],
       },
       {
@@ -146,17 +159,77 @@ export const challenges: Challenge[] = [
         ],
       },
       {
-        heading: 'Set up the toolbox',
+        heading: 'Checkpoint 1 · Install the toolbox',
         body: [
-          'You need Rust installed (rustup.rs, one command). Then grab scripts/install-devtool.sh from our repo, read it (it is 30 lines, and reading scripts before running them is a habit this track will keep rewarding), and run it. It builds zcash-devtool at a revision we have tested end to end, so upstream changes never break your day one. The build takes a few minutes the first time, which is a fine moment to reread the postcards analogy.',
-          'Create your wallet with "cargo run --release -- wallet -w ~/zec-wallet init --name mine -i ~/zec-wallet/identity.txt -n test". The wallet is just a folder you own, and the 24 word seed inside it, encrypted, IS the wallet. Everything else is derived from it. Then "wallet -w ~/zec-wallet sync" pulls the chain and "wallet -w ~/zec-wallet balance" shows what you hold, which is nothing yet.',
-          'Run "wallet -w ~/zec-wallet list-addresses" and meet your Unified Address, one address that bundles receivers for several pools, so payments to it land shielded. That address is what the faucet, and everyone else, pays.',
+          'You need Rust. If you do not have it, rustup.rs gives you one command that installs everything. Then download our install script.',
+          {
+            cmd: 'curl -fsSL https://raw.githubusercontent.com/jinolabs-xyz/speedrun-zcash/master/scripts/install-devtool.sh -o install-devtool.sh',
+            expect: 'Downloads a 30 line shell script into your current folder.',
+          },
+          'Read it before you run it. This habit will keep rewarding you for the rest of your career.',
+          {
+            cmd: 'cat install-devtool.sh',
+            expect: 'It clones zcash-devtool, pins a revision we have tested end to end, and builds it. Nothing else.',
+          },
+          {
+            cmd: 'sh install-devtool.sh',
+            expect: 'A few minutes of compiling, then "Done. Your binary: ~/zcash-devtool/target/release/zcash-devtool".',
+          },
+          'Give the binary a short name for the rest of the run. If you close your terminal, just run this line again.',
+          {
+            cmd: 'export DT=~/zcash-devtool/target/release/zcash-devtool',
+            expect: 'No output. $DT now runs the tool.',
+          },
         ],
       },
       {
-        heading: 'Prove it was you',
+        heading: 'Checkpoint 2 · Create your wallet',
         body: [
-          'Anyone can copy a transaction id from a block explorer. Nobody can forge a memo. Every shielded output carries 512 encrypted bytes only the recipient can read, and only the person who BUILT the transaction can write. So your final step is to send a tiny payment to the challenge address with your builder ID in the memo. When our wallet decrypts it, that is cryptographic proof the transaction was yours. This is also how real Zcash apps do receipts, invoices, and encrypted messaging, so you have now used the primitive behind half the later challenges.',
+          {
+            cmd: '$DT wallet -w ~/zec-wallet init --name mine -i ~/zec-wallet/identity.txt -n test',
+            expect: 'Creates the ~/zec-wallet folder with a freshly generated, encrypted 24 word seed inside.',
+          },
+          'That folder IS the wallet. The seed inside it is the secret everything else derives from, and it never leaves your machine. Now pull the chain and look at what you hold.',
+          {
+            cmd: '$DT wallet -w ~/zec-wallet sync',
+            expect: 'Scans to the chain tip. Seconds, because a brand new wallet has no history to find.',
+          },
+          {
+            cmd: '$DT wallet -w ~/zec-wallet balance',
+            expect: 'Every pool shows zero. For now.',
+          },
+          {
+            cmd: '$DT wallet -w ~/zec-wallet list-addresses',
+            expect: 'Your Unified Address, one long string starting with utest1. Copy it, the faucet wants it next.',
+          },
+          'A Unified Address bundles receivers for several pools into one string, so whoever pays you lands in a shielded pool without thinking about it.',
+        ],
+      },
+      {
+        heading: 'Checkpoint 3 · Fund it from the faucet',
+        body: [
+          'Open zcashfaucet.jinolabs.xyz, paste your Unified Address, and claim a drip. The faucet page shows you the transaction id of your drip. Keep it, the run panel below asks for it as evidence. Then watch the money arrive.',
+          {
+            cmd: '$DT wallet -w ~/zec-wallet sync',
+            expect: 'Picks up the drip once it is mined, usually within a couple of minutes. Rerun it if the balance is still empty.',
+          },
+          {
+            cmd: '$DT wallet -w ~/zec-wallet balance',
+            expect: '0.1 TAZ, listed under Ironwood.',
+          },
+          'It landed in Ironwood because a modern sender paying a Unified Address prefers the newest pool. You just watched pool selection happen, which most wallet users never see.',
+        ],
+      },
+      {
+        heading: 'Checkpoint 4 · Prove it was you',
+        body: [
+          'Anyone can copy a transaction id from a block explorer. Nobody can forge a memo. Every shielded output carries 512 encrypted bytes only the recipient can read, and only the person who BUILT the transaction can write. So your final step is a payment to the challenge address with your builder ID in the memo. When our wallet decrypts it, that is cryptographic proof the transaction was yours.',
+          'Connect your run in the panel below first, and it shows this exact command with your personal memo filled in. The placeholder version:',
+          {
+            cmd: '$DT wallet -w ~/zec-wallet send -i ~/zec-wallet/identity.txt --address <challenge address, shown below> --value 1000000 --memo "srz1:<your builder id>"',
+            expect: 'Your machine builds a real zero-knowledge proof, broadcasts, and prints the transaction id. Expect it to think for a bit.',
+          },
+          'Give it a block to confirm, paste the transaction id into the run panel, and the server checks the memo. This is also how real Zcash apps do receipts, invoices, and encrypted messaging, so you have now used the primitive behind half the later challenges.',
         ],
       },
     ],
