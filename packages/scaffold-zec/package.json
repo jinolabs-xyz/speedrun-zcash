@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "test:starters": "node --test \"starters/**/*.test.mjs\""
   },
   "dependencies": {
     "@chainsafe/webzjs-wallet": "file:./vendor/webzjs-wallet",
