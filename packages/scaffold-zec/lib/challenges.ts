@@ -374,7 +374,8 @@ export const challenges: Challenge[] = [
         heading: 'How mail finds you without an address book',
         body: [
           'Here is the puzzle. Memos are encrypted, and the chain does not say who they are for. So how does your wallet find yours? The same trial decryption you met in challenge #1. The wallet tries its key on every new note on the chain, and the ones that decrypt are yours. Delivery without a mail server, and without anyone learning you received something.',
-          'The code doing this lives in zcash_client_backend, the scanning engine inside librustzcash. When you call the WebZjs API to read a memo, that is the machinery underneath.',
+          'The code doing this lives in zcash_client_backend, the scanning engine inside librustzcash. Every wallet you will use in this track, including the one you built in challenge #0, calls into it to read a memo.',
+          'Worth knowing before you build on memos. A memo is optional, and an empty one is the normal case rather than an error. People have audited shielded payments, found no memos, and concluded the money could not be verified. Do not design an app that treats a missing memo as a missing payment.',
         ],
       },
       {
@@ -389,14 +390,14 @@ export const challenges: Challenge[] = [
         id: 'send-memo',
         title: 'Send a payment with a memo',
         detail:
-          'Send a small amount to the challenge address with a message in the memo field. The memo travels inside the shielded output, encrypted with the note itself.',
+          'Send a small amount to the challenge address with a message in the memo field, using the same wallet and the same --memo flag you met in challenge #0. The memo travels inside the shielded output, encrypted with the note itself.',
         verification: 'chain',
       },
       {
         id: 'receive-memo',
         title: 'Receive and decrypt one',
         detail:
-          'Have a memo sent back to your unified address (a friend, a second wallet, or the faucet bot) and read it from your wallet’s transaction history. That read was a successful trial decryption.',
+          'Have a memo sent back to your unified address (a friend, or a second wallet you create yourself) and read it from your wallet’s transaction history. Memos live in full transaction data rather than compact blocks, so if your history shows the payment but no text, sync the extra data before assuming the memo is missing. That read was a successful trial decryption.',
         verification: 'attested',
       },
       {
