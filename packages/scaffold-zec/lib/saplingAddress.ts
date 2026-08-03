@@ -1,8 +1,9 @@
 /**
  * Extract the Sapling receiver from a unified address, client-side.
  *
- * Since NU6.3 "Ironwood" (ZIP 2006), wallets paying a UA prefer the
- * Ironwood pool, which our NU6-era WebZjs build cannot scan — so funds
+ * Since NU6.3 "Ironwood", wallets paying a UA prefer the Ironwood pool
+ * (the rule is ZIP 326's; ZIP 2006 has no published text), which our
+ * NU6-era WebZjs build cannot scan — so funds
  * sent to the UA never show up. Funds sent to the bare Sapling address
  * land as Sapling outputs, which scan fine. The wasm exposes no way to
  * get that address, so we decode the UA ourselves per ZIP 316:
