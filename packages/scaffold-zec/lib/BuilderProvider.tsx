@@ -7,26 +7,49 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { useWebZjs } from './WebZjsProvider';
 import { deriveIdentity } from './identity';
 import { authMessage } from './authMessage';
-import { mnemonicToSeed } from './bip39';
 
 /**
- * Builder identity and cross-device progress.
+ * Builder identity and progress.
  *
  * Connecting is an explicit action, never automatic: it is the moment a
  * builder chooses to be tracked, and it sends a derived pseudonym and a
- * public key — never the seed, and never anything that links to their
- * addresses or balances.
+ * public key — never anything that links to their wallet, addresses or
+ * balances.
+ *
+ * The identity secret is generated in this browser and stays in
+ * localStorage. It is deliberately NOT derived from a wallet seed: since
+ * Challenge #0 went CLI-first the learner's seed lives in their terminal
+ * wallet, and a website asking for seed material teaches exactly the
+ * habit this curriculum warns against. Proof that a builder controls a
+ * wallet comes from memo verification instead. The cost is that progress
+ * is per-browser until an export/restore path ships.
  */
 
 export interface Completion {
   challengeSlug: string;
   stepId: string;
-  verification: 'attested' | 'chain';
+  verification: 'attested' | 'chain' | 'memo';
   evidence: string | null;
   createdAt: number;
+}
+
+const SECRET_KEY = 'srz-builder-secret-v1';
+
+function localSecret(): Uint8Array {
+  const stored = localStorage.getItem(SECRET_KEY);
+  if (stored && /^[0-9a-f]{64}$/.test(stored)) {
+    return Uint8Array.from(
+      stored.match(/../g)!.map((byte) => parseInt(byte, 16)),
+    );
+  }
+  const fresh = crypto.getRandomValues(new Uint8Array(32));
+  localStorage.setItem(
+    SECRET_KEY,
+    Array.from(fresh, (b) => b.toString(16).padStart(2, '0')).join(''),
+  );
+  return fresh;
 }
 
 export interface BuilderApi {
@@ -34,7 +57,6 @@ export interface BuilderApi {
   completions: Completion[];
   connecting: boolean;
   error: string | null;
-  /** True once a wallet exists, so an identity can be derived. */
   canConnect: boolean;
   connect: () => Promise<void>;
   submitStep: (
@@ -54,7 +76,6 @@ export function useBuilder(): BuilderApi {
 }
 
 export function BuilderProvider({ children }: { children: React.ReactNode }) {
-  const { seedPhrase } = useWebZjs();
   const [builderId, setBuilderId] = useState<string | null>(null);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [connecting, setConnecting] = useState(false);
@@ -76,12 +97,10 @@ export function BuilderProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const connect = useCallback(async () => {
-    if (!seedPhrase) return;
     setConnecting(true);
     setError(null);
     try {
-      const seed = await mnemonicToSeed(seedPhrase);
-      const identity = deriveIdentity(seed);
+      const identity = deriveIdentity(localSecret());
 
       const nonceResponse = await fetch('/api/auth/nonce', {
         method: 'POST',
@@ -117,7 +136,7 @@ export function BuilderProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setConnecting(false);
     }
-  }, [seedPhrase]);
+  }, []);
 
   const submitStep = useCallback(
     async (
@@ -154,7 +173,7 @@ export function BuilderProvider({ children }: { children: React.ReactNode }) {
         completions,
         connecting,
         error,
-        canConnect: !!seedPhrase,
+        canConnect: true,
         connect,
         submitStep,
         isComplete,
