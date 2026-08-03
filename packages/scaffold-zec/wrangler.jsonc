@@ -41,9 +41,9 @@
   //     "speedrun-zcash-webzjs/$(basename "$f")" --file "$f"; done
   //   (plus the snippets/ subtree, keeping relative paths)
   // and uncomment:
-  // "r2_buckets": [
-  //   { "binding": "WEBZJS", "bucket_name": "speedrun-zcash-webzjs" }
-  // ]
+  "r2_buckets": [
+    { "binding": "WEBZJS", "bucket_name": "speedrun-zcash-webzjs" }
+  ]
 
   // Secrets (set via `npx wrangler secret put`, never in this file):
   //   SESSION_SECRET — signs builder session cookies

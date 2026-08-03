@@ -33,8 +33,15 @@ interface Env {
 }
 
 interface WorkerHandler {
-  fetch(request: Request, env: Env, ctx: unknown): Promise<Response>;
+  fetch(request: Request, env: Env, ctx: ExecutionCtx): Promise<Response>;
 }
+
+interface ExecutionCtx {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+// Workers' cache API; lib.dom's CacheStorage has no `default`.
+const edgeCache = (caches as unknown as { default: Cache }).default;
 
 const MIME: Record<string, string> = {
   wasm: 'application/wasm',
@@ -50,19 +57,32 @@ const PAGE_HEADERS: Record<string, string> = {
   'Cross-Origin-Embedder-Policy': 'require-corp',
 };
 
-async function serveWebzjs(env: Env, url: URL): Promise<Response> {
+async function serveWebzjs(
+  request: Request,
+  env: Env,
+  ctx: ExecutionCtx,
+  url: URL,
+): Promise<Response> {
   if (!env.WEBZJS) {
     return new Response(
       'webzjs artifacts unavailable: R2 bucket binding not configured',
       { status: 404 },
     );
   }
+
+  // Every R2 read is a billed operation and these artifacts change only on
+  // a vendor re-upload, so serve repeats from the edge cache. Browser cache
+  // alone doesn't help first visits, and 57 MB of wasm per new learner adds
+  // up against the free tier.
+  const cached = await edgeCache.match(request);
+  if (cached) return cached;
+
   const key = url.pathname.slice('/webzjs/'.length);
   const object = await env.WEBZJS.get(key);
   if (!object) return new Response('not found', { status: 404 });
 
   const ext = key.split('.').pop() ?? '';
-  return new Response(object.body, {
+  const response = new Response(object.body, {
     headers: {
       // Explicit type: the wasm loader (and streaming compilation) rejects
       // anything but application/wasm.
@@ -75,10 +95,13 @@ async function serveWebzjs(env: Env, url: URL): Promise<Response> {
       ETag: object.httpEtag,
     },
   });
+
+  ctx.waitUntil(edgeCache.put(request, response.clone()));
+  return response;
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: unknown): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionCtx): Promise<Response> {
     // Without the secret, sessions would be signed with whatever fallback
     // leaked into the bundle. Refuse to serve instead.
     if (!env.SESSION_SECRET) {
@@ -88,8 +111,8 @@ export default {
     }
 
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/webzjs/')) {
-      return serveWebzjs(env, url);
+    if (url.pathname.startsWith('/webzjs/') && request.method === 'GET') {
+      return serveWebzjs(request, env, ctx, url);
     }
 
     const response = await (handler as WorkerHandler).fetch(request, env, ctx);
