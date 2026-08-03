@@ -583,7 +583,8 @@ export const challenges: Challenge[] = [
       {
         heading: 'Single-payment disclosure',
         body: [
-          'Sometimes even an IVK shares too much, when you want to prove ONE payment to ONE party. Payment disclosures do exactly that. They are a signed statement, verifiable against the chain, that a specific transaction paid a specific amount to a specific address. This is the dispute-resolution tool for shielded commerce. Prove the payment, reveal nothing else, case closed.',
+          'Sometimes even an IVK shares too much, when you want to prove ONE payment to ONE party. That is the job of a payment disclosure, a statement anyone can check against the chain saying that a specific transaction paid a specific amount to a specific address. Prove the payment, reveal nothing else.',
+          'Now the honest part. No shipped tool can produce one today. The old full-node wallet had an experimental version, and it retired along with that wallet. The replacement is a draft specification that covers only the Sapling pool and has no implementation yet. So the dial has a missing notch. You can share a viewing key, or nothing, and per-payment proof is a known gap. Design with the dial you have, and remember this gap when you reach challenge #9, because filling it is one of the most wanted contributions in the ecosystem.',
         ],
       },
     ],
@@ -599,21 +600,21 @@ export const challenges: Challenge[] = [
         id: 'watch-only',
         title: 'Build the auditor’s view',
         detail:
-          'Restore a second wallet from the viewing key alone. Watch it find every transaction, with balances, memos, and history, while the send button stays impossible. That is your auditor’s exact experience.',
+          'Run list-accounts in your devtool wallet and copy the UFVK it prints. Create a second wallet from it with init-fvk (give it your wallet’s birthday so the sync is quick), sync, and look around. Balances, history, and memos are all there, and there is no way to spend. That is your auditor’s exact experience.',
         verification: 'attested',
       },
       {
         id: 'disclose',
-        title: 'Disclose a single payment',
+        title: 'Scope a disclosure like a designer',
         detail:
-          'Produce a disclosure for one transaction and verify it as a third party would, with the payment proven and everything else still sealed.',
+          'Pick one payment your auditor wallet can see. Write down what a per-payment proof of it would reveal, next to what the UFVK you just shared reveals. The distance between those two lists is the gap from the lesson, and it is the design constraint every shielded app lives with today.',
         verification: 'attested',
       },
     ],
     gotcha: {
       heading: '⚠️ There is no unshare button',
       body: [
-        'A viewing key shares the address’s past AND future. Hand your accountant an FVK in March and they can still read December. Revocation does not exist, and the only fix is migrating funds to a fresh account. So scope every disclosure as tightly as the question demands. Reach for per-payment proof before an IVK, and an IVK before an FVK, and design your apps to make the narrow choice the easy one.',
+        'A viewing key shares the address’s past AND future. Hand your accountant an FVK in March and they can still read December. Revocation does not exist, and the only fix is migrating funds to a fresh account. So scope every disclosure as tightly as the question demands. Prefer an IVK to an FVK, design your apps to make the narrow choice the easy one, and the day per-payment proofs ship, reach for those first.',
       ],
     },
   },
