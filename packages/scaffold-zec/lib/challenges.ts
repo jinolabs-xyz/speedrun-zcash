@@ -893,7 +893,7 @@ export const challenges: Challenge[] = [
       name: 'The whole ecosystem',
       repo: 'https://github.com/zcash',
       whatItDoes:
-        'WebZjs, librustzcash, Zebra, Zaino, orchard. Every repo you met on the way up is developed in the open and takes contributions. This challenge ends with your name in one of them.',
+        'zcash-devtool, WebZjs, librustzcash, Zebra, Zaino, orchard. Every repo you met on the way up is developed in the open and takes contributions. This challenge ends with your name in one of them.',
     },
     lesson: [
       {
@@ -901,6 +901,7 @@ export const challenges: Challenge[] = [
         body: [
           'Look back at the codebase spotlights. WebZjs (TypeScript and Rust-WASM, wallets in browsers), librustzcash (Rust, the wallet engine everything embeds), Zebra (Rust, consensus), Zaino (Rust, the next indexer), orchard and halo2 (Rust, the protocol core). You have USED all of them. That is more working context than most first-time contributors ever bring.',
           'Pick by taste, honestly assessed. Strongest in TypeScript and product instincts, go to WebZjs. Want to live where every wallet’s bugs are born and fixed, go to librustzcash. Drawn to systems and networking, go to Zebra or Zaino. Fascinated by challenge #7, go to orchard. There is no wrong door, and they all lead into the same house.',
+          'One more door, and it is the widest. zcash-devtool is the tool you have used since challenge #0, and it is built to be extended. Each command is one small module wired into a list, its maintainer demos adding one live and asks people to send those changes back, and because it is a developer tool rather than consensus code, a rough first attempt gets review instead of alarm.',
         ],
       },
       {
@@ -922,7 +923,7 @@ export const challenges: Challenge[] = [
         id: 'claim',
         title: 'Pick a repo and claim an issue',
         detail:
-          'Choose your codebase, build it locally, and comment on a small open issue with your plan. Getting a maintainer’s nod before writing code is the professional move.',
+          'Choose your codebase, build it locally, and comment on a small open issue with your plan. Getting a maintainer’s nod before writing code is the professional move. If the blank page is the thing stopping you, take one of these instead. Teach zcash-devtool to read network upgrade activation heights from a config file, which is what it needs for local test networks and which its maintainer has named as wanted. Write the ZecHub page on key derivation and wallet birthdays, which does not exist and which challenge #3 needed. Or build any piece of the per-payment disclosure that challenge #5 showed you is missing.',
         verification: 'attested',
       },
       {
