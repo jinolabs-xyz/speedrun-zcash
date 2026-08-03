@@ -132,7 +132,7 @@ export const challenges: Challenge[] = [
       {
         heading: 'Set up the toolbox',
         body: [
-          'You need Rust installed (rustup.rs, one command). Then clone github.com/zcash/zcash-devtool and build it with "cargo build --release". The build takes a few minutes the first time, which is a fine moment to reread the postcards analogy.',
+          'You need Rust installed (rustup.rs, one command). Then grab scripts/install-devtool.sh from our repo, read it (it is 30 lines, and reading scripts before running them is a habit this track will keep rewarding), and run it. It builds zcash-devtool at a revision we have tested end to end, so upstream changes never break your day one. The build takes a few minutes the first time, which is a fine moment to reread the postcards analogy.',
           'Create your wallet with "cargo run --release -- wallet -w ~/zec-wallet init --name mine -i ~/zec-wallet/identity.txt -n test". The wallet is just a folder you own, and the 24 word seed inside it, encrypted, IS the wallet. Everything else is derived from it. Then "wallet -w ~/zec-wallet sync" pulls the chain and "wallet -w ~/zec-wallet balance" shows what you hold, which is nothing yet.',
           'Run "wallet -w ~/zec-wallet list-addresses" and meet your Unified Address, one address that bundles receivers for several pools, so payments to it land shielded. That address is what the faucet, and everyone else, pays.',
         ],

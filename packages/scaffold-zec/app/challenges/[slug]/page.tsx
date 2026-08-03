@@ -51,10 +51,7 @@ export default function ChallengePage({
 
       <Notice
         id="proving-time"
-        action={{
-          label: 'faucet ↗',
-          href: cli ? 'https://zcashfaucet.jinolabs.xyz/' : 'https://fauzec.com/',
-        }}
+        action={{ label: 'faucet ↗', href: 'https://zcashfaucet.jinolabs.xyz/' }}
       >
         {cli
           ? 'Testnet only, so these coins are worthless. You run every step in your own terminal with the same tool the core developers use.'
