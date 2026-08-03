@@ -21,16 +21,39 @@ export async function POST(request: Request) {
   }
 
   const result = await verifyStep(challengeSlug, stepId, evidence, builderId);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.reason }, { status: 422 });
+
+  if (!result.ok && result.kind === 'invalid') {
+    return NextResponse.json({ error: result.reason }, { status: 400 });
+  }
+  if (!result.ok && result.kind === 'unavailable') {
+    return NextResponse.json({ error: result.reason }, { status: 502 });
   }
 
-  await recordCompletion(builderId, {
-    challengeSlug,
-    stepId,
-    verification: result.verification,
-    evidence: result.evidence,
-  });
+  // Accepted and rejected are both verdicts worth keeping: the rejection
+  // feedback is the teaching moment, and it survives a page reload. The
+  // no-downgrade rule in recordCompletion protects accepted rows.
+  const stepEvidence =
+    typeof evidence?.txid === 'string' ? evidence.txid.toLowerCase() : null;
+  await recordCompletion(
+    builderId,
+    result.ok
+      ? {
+          challengeSlug,
+          stepId,
+          verification: result.verification,
+          evidence: result.evidence,
+          status: 'accepted',
+          feedback: null,
+        }
+      : {
+          challengeSlug,
+          stepId,
+          verification: result.verification,
+          evidence: stepEvidence,
+          status: 'rejected',
+          feedback: result.reason,
+        },
+  );
 
   return NextResponse.json({ completions: await listCompletions(builderId) });
 }

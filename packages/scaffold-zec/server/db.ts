@@ -61,6 +61,8 @@ async function ready(): Promise<D1Database> {
         step_id        TEXT NOT NULL,
         verification   TEXT NOT NULL,
         evidence       TEXT,
+        status         TEXT NOT NULL DEFAULT 'accepted',
+        feedback       TEXT,
         created_at     INTEGER NOT NULL,
         PRIMARY KEY (builder_id, challenge_slug, step_id)
       )`),
@@ -78,11 +80,37 @@ async function ready(): Promise<D1Database> {
   return db;
 }
 
+// Existing deployments created `completions` before the lifecycle columns.
+// ADD COLUMN is the only migration; a duplicate-column error means it
+// already ran, which is the steady state.
+let lifecycleReady: Promise<void> | null = null;
+
+async function migrated(): Promise<D1Database> {
+  const db = await ready();
+  lifecycleReady ??= (async () => {
+    for (const column of [
+      "ALTER TABLE completions ADD COLUMN status TEXT NOT NULL DEFAULT 'accepted'",
+      'ALTER TABLE completions ADD COLUMN feedback TEXT',
+    ]) {
+      try {
+        await db.prepare(column).run();
+      } catch {
+        /* duplicate column — already migrated */
+      }
+    }
+  })();
+  await lifecycleReady;
+  return db;
+}
+
 export interface Completion {
   challengeSlug: string;
   stepId: string;
   verification: 'attested' | 'chain' | 'memo';
   evidence: string | null;
+  /** Lifecycle verdict. Rejections carry feedback — the teaching moment. */
+  status: 'accepted' | 'rejected';
+  feedback: string | null;
   createdAt: number;
 }
 
@@ -188,15 +216,20 @@ export async function recordCompletion(
   builderId: string,
   c: Omit<Completion, 'createdAt'>,
 ): Promise<void> {
-  const db = await ready();
+  const db = await migrated();
+  // The WHERE clause is the no-downgrade rule: once a step is accepted, a
+  // later failed attempt must not erase the success.
   await db
     .prepare(
       `INSERT INTO completions
-         (builder_id, challenge_slug, step_id, verification, evidence, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)
+         (builder_id, challenge_slug, step_id, verification, evidence, status, feedback, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(builder_id, challenge_slug, step_id) DO UPDATE SET
          verification = excluded.verification,
-         evidence     = excluded.evidence`,
+         evidence     = excluded.evidence,
+         status       = excluded.status,
+         feedback     = excluded.feedback
+       WHERE NOT (completions.status = 'accepted' AND excluded.status = 'rejected')`,
     )
     .bind(
       builderId,
@@ -204,16 +237,18 @@ export async function recordCompletion(
       c.stepId,
       c.verification,
       c.evidence,
+      c.status,
+      c.feedback,
       Date.now(),
     )
     .run();
 }
 
 export async function listCompletions(builderId: string): Promise<Completion[]> {
-  const db = await ready();
+  const db = await migrated();
   const { results } = await db
     .prepare(
-      `SELECT challenge_slug, step_id, verification, evidence, created_at
+      `SELECT challenge_slug, step_id, verification, evidence, status, feedback, created_at
        FROM completions WHERE builder_id = ? ORDER BY created_at`,
     )
     .bind(builderId)
@@ -222,6 +257,8 @@ export async function listCompletions(builderId: string): Promise<Completion[]> 
       step_id: string;
       verification: 'attested' | 'chain' | 'memo';
       evidence: string | null;
+      status: 'accepted' | 'rejected';
+      feedback: string | null;
       created_at: number;
     }>();
   return results.map((row) => ({
@@ -229,6 +266,8 @@ export async function listCompletions(builderId: string): Promise<Completion[]> 
     stepId: row.step_id,
     verification: row.verification,
     evidence: row.evidence,
+    status: row.status,
+    feedback: row.feedback,
     createdAt: row.created_at,
   }));
 }
