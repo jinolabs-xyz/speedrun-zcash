@@ -1,8 +1,9 @@
 import { getChallenge } from '../lib/challenges';
 import { lookupTransaction } from './lightwalletd';
+import { getMemoProof } from './db';
 
 export type VerificationResult =
-  | { ok: true; verification: 'attested' | 'chain'; evidence: string | null }
+  | { ok: true; verification: 'attested' | 'chain' | 'memo'; evidence: string | null }
   | { ok: false; reason: string };
 
 /**
@@ -10,18 +11,19 @@ export type VerificationResult =
  * step definition (lib/challenges.ts) so the UI can tell builders up front
  * what each step will require.
  *
- * Known limit: a chain check proves the transaction exists and is mined, not
- * that this builder made it — shielded transactions reveal no parties, so
- * any mined txid would pass. Closing that gap needs the memo-based proof
- * (builder ID inside an encrypted memo sent to a challenge address, read
- * back with the platform's viewing key), which is blocked on memo support in
- * WebZjs. Until then this raises the bar from "trust the client" to "the
- * chain agrees something happened", and nothing more should be claimed.
+ * 'chain' proves the transaction exists and is mined, not that this builder
+ * made it — shielded transactions reveal no parties, so any mined txid would
+ * pass. 'memo' closes that gap: the builder sends a shielded memo carrying
+ * their builder ID to the challenge address, the challenge wallet decrypts it
+ * with its own keys, and the ingest job (scripts/memo-ingest.mjs) records
+ * txid → builder ID. A memo the challenge wallet decrypted could only have
+ * been written by whoever built that transaction.
  */
 export async function verifyStep(
   challengeSlug: string,
   stepId: string,
   evidence: { txid?: string } | undefined,
+  builderId: string,
 ): Promise<VerificationResult> {
   const challenge = getChallenge(challengeSlug);
   if (!challenge || challenge.status !== 'live') {
@@ -35,8 +37,27 @@ export async function verifyStep(
     return { ok: true, verification: 'attested', evidence: null };
   }
 
-  const txid = evidence?.txid;
+  const txid = evidence?.txid?.toLowerCase();
   if (!txid) return { ok: false, reason: 'this step requires a txid' };
+
+  if (step.verification === 'memo') {
+    const proof = getMemoProof(txid);
+    if (!proof) {
+      return {
+        ok: false,
+        reason:
+          'memo not seen yet — the challenge wallet rescans every few minutes; if you just sent it, try again shortly',
+      };
+    }
+    if (proof.builderId !== builderId) {
+      return {
+        ok: false,
+        reason:
+          'the memo in that transaction does not carry your builder ID — send it from your own wallet with the exact memo the step shows',
+      };
+    }
+    return { ok: true, verification: 'memo', evidence: txid };
+  }
 
   let lookup;
   try {

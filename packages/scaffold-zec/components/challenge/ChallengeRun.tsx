@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Alert, Button, Card, Chip, ProgressBar } from '@heroui/react';
+import { Alert, Button, Card, Chip, Input, ProgressBar } from '@heroui/react';
 import type { Challenge } from '../../lib/challenges';
+import { CHALLENGE_MEMO_ADDRESS } from '../../lib/challenges';
 import { useWebZjs } from '../../lib/WebZjsProvider';
 import { useBuilder } from '../../lib/BuilderProvider';
 import { ConnectBuilder } from '../ConnectBuilder';
@@ -27,22 +28,32 @@ function StepBadge({ done, index }: { done: boolean; index: number }) {
   );
 }
 
+const DONE_LABEL = {
+  attested: 'self-attested',
+  chain: 'verified on-chain',
+  memo: 'memo-verified',
+} as const;
+
 /**
- * Generic run panel for every challenge after #0. Challenge #0 keeps its
- * bespoke panel (Challenge0Play) because its steps advance automatically
- * from observed wallet state; here the builder drives instead:
+ * The run panel for every challenge. The builder drives:
  *
  * - attested steps have a "Mark complete" button — the server records the
  *   builder's signed word, labelled as exactly that.
- * - chain steps have a "Verify on chain" button — the panel finds a mined
- *   transaction in the wallet and submits its txid, which the server
- *   independently looks up on lightwalletd before accepting.
+ * - chain steps submit a txid the server independently looks up on
+ *   lightwalletd. With the embedded wallet present the panel finds a mined
+ *   outgoing transaction itself; on CLI challenges (embeddedWallet: false)
+ *   the builder pastes the txid from their own terminal.
+ * - memo steps always take a pasted txid, and show the challenge address
+ *   plus the exact `srz1:<builderId>` memo the builder must send, because
+ *   the proof is the memo, not the txid.
  */
 export function ChallengeRun({ challenge }: { challenge: Challenge }) {
+  const cli = challenge.embeddedWallet === false;
   const { status, listTransactions } = useWebZjs();
   const { builderId, submitStep, isComplete } = useBuilder();
   const [pending, setPending] = useState<string | null>(null);
   const [rejection, setRejection] = useState<string | null>(null);
+  const [txids, setTxids] = useState<Record<string, string>>({});
 
   const done = (stepId: string) => isComplete(challenge.slug, stepId);
   const completed = challenge.steps.filter((s) => done(s.id)).length;
@@ -60,7 +71,17 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
     }
   };
 
-  const verifyOnChain = async (stepId: string) => {
+  const verifyTxid = async (stepId: string) => {
+    const pasted = txids[stepId]?.trim();
+    if (pasted) {
+      await submit(stepId, { txid: pasted });
+      return;
+    }
+    if (cli) {
+      setRejection('paste the transaction id from your terminal first.');
+      return;
+    }
+    // Embedded-wallet challenges can find the evidence themselves.
     setPending(stepId);
     setRejection(null);
     try {
@@ -125,31 +146,57 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
                       color="success"
                       className="mono"
                     >
-                      {step.verification === 'chain'
-                        ? 'verified on-chain'
-                        : 'self-attested'}
+                      {DONE_LABEL[step.verification]}
                     </Chip>
                   )}
                 </div>
                 <p className="m-0 text-[14px] leading-[1.6] muted">
                   {step.detail}
                 </p>
+                {!done(step.id) && step.verification === 'memo' && (
+                  <div className="flex flex-col gap-1 rounded-lg p-3" style={{ border: '1px solid var(--hairline)' }}>
+                    <span className="eyebrow">send to</span>
+                    <code className="mono break-all text-[11.5px]">
+                      {CHALLENGE_MEMO_ADDRESS}
+                    </code>
+                    <span className="eyebrow mt-2">with memo</span>
+                    <code className="mono text-[12.5px]">
+                      {builderId ? `srz1:${builderId}` : 'connect your run to see your memo'}
+                    </code>
+                  </div>
+                )}
                 {!done(step.id) && (
                   <div className="flex flex-wrap items-center gap-3">
+                    {step.verification !== 'attested' && (cli || step.verification === 'memo') && (
+                      <Input
+                        aria-label="transaction id"
+                        placeholder="paste the txid"
+                        className="mono min-w-[220px] flex-1"
+                        value={txids[step.id] ?? ''}
+                        onChange={(e) =>
+                          setTxids((prev) => ({
+                            ...prev,
+                            [step.id]: e.target.value,
+                          }))
+                        }
+                      />
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
                       isPending={pending === step.id}
                       isDisabled={!builderId}
                       onPress={() =>
-                        step.verification === 'chain'
-                          ? verifyOnChain(step.id)
-                          : submit(step.id)
+                        step.verification === 'attested'
+                          ? submit(step.id)
+                          : verifyTxid(step.id)
                       }
                     >
-                      {step.verification === 'chain'
-                        ? 'Verify on chain'
-                        : 'Mark complete'}
+                      {step.verification === 'attested'
+                        ? 'Mark complete'
+                        : step.verification === 'memo'
+                          ? 'Verify memo'
+                          : 'Verify on chain'}
                     </Button>
                     {!builderId && (
                       <span className="hint">Connect your run above first.</span>
@@ -170,24 +217,28 @@ export function ChallengeRun({ challenge }: { challenge: Challenge }) {
           </Alert>
         )}
 
-        <div className="rule" />
+        {!cli && (
+          <>
+            <div className="rule" />
 
-        {status === 'no-account' ? (
-          <CreateWallet />
-        ) : status === 'ready' ? (
-          <div className="flex flex-col gap-4">
-            <SyncStatus />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ShieldedBalance />
-              <AddressDisplay />
-            </div>
-            <SendZec />
-          </div>
-        ) : (
-          <p className="hint m-0">
-            The embedded wallet boots when this page opens, and chain-verified
-            steps use it as their evidence.
-          </p>
+            {status === 'no-account' ? (
+              <CreateWallet />
+            ) : status === 'ready' ? (
+              <div className="flex flex-col gap-4">
+                <SyncStatus />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ShieldedBalance />
+                  <AddressDisplay />
+                </div>
+                <SendZec />
+              </div>
+            ) : (
+              <p className="hint m-0">
+                The embedded wallet boots when this page opens, and
+                chain-verified steps use it as their evidence.
+              </p>
+            )}
+          </>
         )}
 
         {allDone && (

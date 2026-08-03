@@ -10,8 +10,12 @@ export interface ChallengeStep {
    * 'chain' means a txid the server independently looks up on lightwalletd.
    *   Shielded transactions hide amounts and parties, so existence and
    *   inclusion in a block is exactly what can be verified.
+   * 'memo' means the builder sends a shielded memo carrying their builder ID
+   *   to the challenge address, and the server finds it after the challenge
+   *   wallet decrypts it. Unlike 'chain' this proves authorship: only the
+   *   transaction's author can put text in its encrypted memo.
    */
-  verification: 'attested' | 'chain';
+  verification: 'attested' | 'chain' | 'memo';
 }
 
 /**
@@ -72,7 +76,24 @@ export interface Challenge {
   lesson: { heading: string; body: string[] }[];
   steps: ChallengeStep[];
   gotcha?: { heading: string; body: string[] };
+  /**
+   * Set to false for challenges the learner runs from their own terminal.
+   * The page then skips booting the embedded wasm wallet (a 57 MB download)
+   * and the run panel asks for txids instead of reading them from wallet
+   * state.
+   */
+  embeddedWallet?: false;
 }
+
+/**
+ * Where memo proofs go: the platform's challenge wallet. Learners send a
+ * small amount here with a `srz1:<builderId>` memo; only the transaction's
+ * author can write its encrypted memo, so a decrypted memo carrying the
+ * builder's ID proves authorship. The matching viewing key lives with the
+ * server-side ingest job, never in this repo.
+ */
+export const CHALLENGE_MEMO_ADDRESS =
+  'utest1c0xwdeqrmysuvkztgaf8r4ldpr73vuunxyhumtxn9llhwqzls3clsy3duvjewxa6evtzfyvxjzt0gzxqzt6h4d0vnnhjnlgm65pz88x4gcnazyee8g9mnjdged79k2uhwrgwture7xvmfj5456kp9qume0n6qtqja5phmhhrn4c4c0epe5j750qxzsegts0myny7qvpmth4979u4ysa';
 
 export const challenges: Challenge[] = [
   {
@@ -81,60 +102,69 @@ export const challenges: Challenge[] = [
     emoji: '🏁',
     title: 'First Shielded Transaction',
     tagline:
-      'Create an in-browser wallet, fund it from the faucet, and send a payment nobody can see.',
+      'Create a real wallet from your terminal, fund it from the faucet, and send a payment nobody can see.',
     status: 'live',
     level: 'foundations',
-    skills: ['Shielded pools', 'Unified addresses', 'Testnet', 'Light clients'],
+    skills: ['Shielded pools', 'Unified addresses', 'Testnet', 'zcash-devtool'],
     codebase: {
-      name: 'WebZjs',
-      repo: 'https://github.com/ChainSafe/WebZjs',
+      name: 'zcash-devtool',
+      repo: 'https://github.com/zcash/zcash-devtool',
       whatItDoes:
-        'Zcash light-client code compiled to WebAssembly. It is the wallet running in your browser tab right now, built by ChainSafe on top of the same Rust libraries the desktop and mobile wallets use.',
+        'The Swiss army knife the Zcash core developers themselves use. One command line tool that creates wallets, syncs the chain, sends shielded payments, and inspects any Zcash address or transaction you throw at it. You will use the same tool they do, from day one.',
     },
+    embeddedWallet: false,
     lesson: [
       {
         heading: 'Money that keeps secrets',
         body: [
           'Picture this. Every time you pay for anything, you write the amount, your name, and who you paid on a postcard, then mail it for the whole world to read, forever. That is how most blockchains work. Bitcoin is a public postcard system.',
           'Zcash is money in a sealed envelope. The network can check the envelope is legitimate, that the money is real and nobody is spending the same coin twice, without ever opening it. The trick that makes this possible is called a zero-knowledge proof, a way to prove something is true without revealing why. You are about to use one for real.',
-          'In this challenge you run the loop every Zcash app is built on. Create a wallet in your browser, receive some coins, and send a payment nobody can see. The coins are testnet, play money that is deliberately worthless, so nothing can go wrong that matters. No installs, no crypto background required.',
+          'In this challenge you run the loop every Zcash app is built on. Create a wallet from your own terminal, receive some coins, and send a payment nobody can see. The coins are testnet, play money that is deliberately worthless, so nothing can go wrong that matters. No crypto background required, and the tool you install is the same one the core developers use every day.',
         ],
       },
       {
         heading: 'Postcards versus envelopes',
         body: [
           'Zcash is one chain, but money on it lives in different "pools". The transparent pool is the postcard system. Addresses start with t, and anyone can look up every transaction. It exists for compatibility with the Bitcoin-style world.',
-          'The shielded pools (an older one called Sapling and the current one, Orchard) are the sealed envelopes, where sender, receiver, and amount are all encrypted. A shielded balance is a set of encrypted "notes" that only your keys can read. When you spend one, the network checks a zero-knowledge proof that the money exists and is yours, and learns nothing else.',
+          'The shielded pools are the sealed envelopes, where sender, receiver, and amount are all encrypted. There have been three generations of them, Sapling, then Orchard, then Ironwood, the newest, added by the latest network upgrade. A shielded balance is a set of encrypted "notes" that only your keys can read. When you spend one, the network checks a zero-knowledge proof that the money exists and is yours, and learns nothing else.',
         ],
       },
       {
-        heading: 'Unified addresses',
+        heading: 'Set up the toolbox',
         body: [
-          'Modern Zcash wallets share one Unified Address (UA) that bundles receivers for multiple pools. Payments to a UA land shielded whenever the sender supports it. Your wallet below shows both your UA and a transparent address. Compare what a block explorer can see about each after you transact.',
+          'You need Rust installed (rustup.rs, one command). Then grab scripts/install-devtool.sh from our repo, read it (it is 30 lines, and reading scripts before running them is a habit this track will keep rewarding), and run it. It builds zcash-devtool at a revision we have tested end to end, so upstream changes never break your day one. The build takes a few minutes the first time, which is a fine moment to reread the postcards analogy.',
+          'Create your wallet with "cargo run --release -- wallet -w ~/zec-wallet init --name mine -i ~/zec-wallet/identity.txt -n test". The wallet is just a folder you own, and the 24 word seed inside it, encrypted, IS the wallet. Everything else is derived from it. Then "wallet -w ~/zec-wallet sync" pulls the chain and "wallet -w ~/zec-wallet balance" shows what you hold, which is nothing yet.',
+          'Run "wallet -w ~/zec-wallet list-addresses" and meet your Unified Address, one address that bundles receivers for several pools, so payments to it land shielded. That address is what the faucet, and everyone else, pays.',
+        ],
+      },
+      {
+        heading: 'Prove it was you',
+        body: [
+          'Anyone can copy a transaction id from a block explorer. Nobody can forge a memo. Every shielded output carries 512 encrypted bytes only the recipient can read, and only the person who BUILT the transaction can write. So your final step is to send a tiny payment to the challenge address with your builder ID in the memo. When our wallet decrypts it, that is cryptographic proof the transaction was yours. This is also how real Zcash apps do receipts, invoices, and encrypted messaging, so you have now used the primitive behind half the later challenges.',
         ],
       },
     ],
     steps: [
       {
         id: 'wallet',
-        title: 'Create your wallet',
+        title: 'Build the devtool and create your wallet',
         detail:
-          'Generate a 24-word seed in the browser. The seed is the wallet, and everything else is derived from it.',
+          'Install Rust, build zcash-devtool, and run wallet init as shown in the lesson. When list-addresses prints your Unified Address, this step is done.',
         verification: 'attested',
       },
       {
         id: 'fund',
         title: 'Get testnet ZEC from the faucet',
         detail:
-          'Copy your Sapling address and request TAZ from fauzec, the ecosystem faucet real Zcash wallets use for testnet coins. Then wait for the wallet to sync it. Drips to the unified address end up in the new Ironwood pool that this wallet cannot scan yet, so Sapling is the one to use. Testnet coins are worthless, which makes them perfect for breaking things.',
+          'Paste your Unified Address into the ecosystem faucet and claim a drip. Then run sync until balance shows it arrived, usually within a couple of minutes. The faucet page shows the transaction id of your drip, and that is your evidence here. Testnet coins are worthless, which makes them perfect for breaking things.',
         verification: 'chain',
       },
       {
         id: 'send',
-        title: 'Send a shielded payment',
+        title: 'Send a shielded payment that proves it was you',
         detail:
-          'Send some TAZ to any address, and the challenge address works fine. Your browser builds a real zero-knowledge proof, so expect it to take a few seconds.',
-        verification: 'chain',
+          'Send 0.01 TAZ to the challenge address with your builder memo, using send with the exact address and memo shown below. Your machine builds a real zero-knowledge proof, then paste the resulting transaction id. Our wallet decrypts your memo, and that is proof of authorship no explorer copy-paste can fake.',
+        verification: 'memo',
       },
     ],
     gotcha: {

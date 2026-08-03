@@ -7,7 +7,6 @@ import { Alert, Chip, Surface } from '@heroui/react';
 import { getChallenge } from '../../../lib/challenges';
 import { WalletBoot } from '../../../components/WalletBoot';
 import { Notice } from '../../../components/Notice';
-import { Challenge0Play } from '../../../components/challenge/Challenge0Play';
 import { ChallengeRun } from '../../../components/challenge/ChallengeRun';
 
 export default function ChallengePage({
@@ -21,10 +20,11 @@ export default function ChallengePage({
   if (!challenge || (challenge.status !== 'live' && challenge.lesson.length === 0))
     notFound();
   const live = challenge.status === 'live';
+  const cli = challenge.embeddedWallet === false;
 
   return (
     <main className="wrap section flex max-w-[760px] flex-col gap-10">
-      <WalletBoot />
+      {!cli && <WalletBoot />}
 
       <header className="flex flex-col gap-4">
         <Link href="/challenges" className="eyebrow hover:text-[var(--gold)]">
@@ -51,10 +51,11 @@ export default function ChallengePage({
 
       <Notice
         id="proving-time"
-        action={{ label: 'faucet ↗', href: 'https://fauzec.com/' }}
+        action={{ label: 'faucet ↗', href: 'https://zcashfaucet.jinolabs.xyz/' }}
       >
-        Testnet only, so these coins are worthless. Zero-knowledge proofs are
-        built in this tab, so a send takes around 30 seconds.
+        {cli
+          ? 'Testnet only, so these coins are worthless. You run every step in your own terminal with the same tool the core developers use.'
+          : 'Testnet only, so these coins are worthless. Zero-knowledge proofs are built in this tab, so a send takes around 30 seconds.'}
       </Notice>
 
       <Surface
@@ -90,12 +91,7 @@ export default function ChallengePage({
         </section>
       ))}
 
-      {live &&
-        (challenge.slug === 'first-shielded-transaction' ? (
-          <Challenge0Play challenge={challenge} />
-        ) : (
-          <ChallengeRun challenge={challenge} />
-        ))}
+      {live && <ChallengeRun challenge={challenge} />}
 
       {!live && challenge.steps.length > 0 && (
         <section className="flex flex-col gap-4">

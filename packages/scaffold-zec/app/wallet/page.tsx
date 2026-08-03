@@ -94,7 +94,7 @@ export default function WalletPage() {
 
       <Notice
         id="proving-time"
-        action={{ label: 'faucet ↗', href: 'https://fauzec.com/' }}
+        action={{ label: 'faucet ↗', href: 'https://zcashfaucet.jinolabs.xyz/' }}
       >
         Testnet only, so these coins are worthless. Zero-knowledge proofs are
         built in this tab, so a send takes around 30 seconds.

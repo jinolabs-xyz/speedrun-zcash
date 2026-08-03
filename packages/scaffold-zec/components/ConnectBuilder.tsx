@@ -5,7 +5,7 @@ import { useBuilder } from '../lib/BuilderProvider';
 import { describeWalletError } from '../lib/walletError';
 
 export function ConnectBuilder() {
-  const { builderId, connect, connecting, error, canConnect } = useBuilder();
+  const { builderId, connect, connecting, error } = useBuilder();
   const problem = error ? describeWalletError(error) : null;
 
   if (builderId) {
@@ -19,7 +19,7 @@ export function ConnectBuilder() {
         <span className="text-[13px] muted">
           Builder{' '}
           <code style={{ color: 'var(--accent)' }}>{builderId.slice(0, 8)}</code>
-          , and your run follows this seed to any browser.
+          , and your run is saved for this browser.
         </span>
       </Surface>
     );
@@ -38,9 +38,9 @@ export function ConnectBuilder() {
         Track your run
       </span>
       <p className="m-0 text-[14.5px] leading-[1.6] muted">
-        Your builder identity is derived from your wallet seed, with no account
-        and no password. Only a pseudonym and a public key are sent, never the
-        seed and nothing that links to your addresses.
+        Your builder identity is a keypair created in this browser, with no
+        account and no password. Only a pseudonym and a public key are sent,
+        nothing that links to your wallet or addresses.
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <Button
@@ -48,18 +48,14 @@ export function ConnectBuilder() {
           variant="primary"
           onPress={connect}
           isPending={connecting}
-          isDisabled={!canConnect}
         >
           {({ isPending }) => (
             <>
               {isPending && <Spinner color="current" size="sm" />}
-              {isPending ? 'Connecting…' : 'Connect wallet'}
+              {isPending ? 'Connecting…' : 'Connect'}
             </>
           )}
         </Button>
-        {!canConnect && (
-          <span className="hint">Create a wallet below first.</span>
-        )}
       </div>
       {problem && (
         <Alert status={problem.kind === 'connection' ? 'warning' : 'danger'}>

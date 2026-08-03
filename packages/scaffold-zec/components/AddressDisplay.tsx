@@ -69,7 +69,7 @@ export function AddressDisplay() {
         <p className="hint m-0">
           Fund it from the{' '}
           <Link
-            href="https://fauzec.com/"
+            href="https://zcashfaucet.jinolabs.xyz/"
             target="_blank"
             rel="noreferrer"
             className="text-[length:inherit]"
