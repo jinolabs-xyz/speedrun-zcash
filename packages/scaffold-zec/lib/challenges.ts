@@ -573,7 +573,7 @@ export const challenges: Challenge[] = [
       {
         heading: 'The two layers',
         body: [
-          'Zebra is the node. It talks to peers, validates every block against consensus rules, and holds the chain. It is the Zcash Foundation’s from-scratch Rust implementation, deliberately independent, so a bug in one implementation does not take down the network.',
+          'Zebra is the node. It talks to peers, validates every block against consensus rules, and holds the chain. It is the Zcash Foundation’s from-scratch Rust implementation, deliberately independent, so a bug in one implementation does not take down the network. Run a current release. The network upgraded in July, and a node validating by last year’s rules keeps running and looking healthy while every wallet behind it goes blind to the newest pool.',
           'Above it sits the indexer, lightwalletd today and Zaino as its Rust successor, which digests full blocks into the compact blocks your wallets have been syncing from since challenge #1. The node validates and the indexer serves, and wallets only ever see the second layer.',
         ],
       },
@@ -582,6 +582,7 @@ export const challenges: Challenge[] = [
         body: [
           'Your node is not just a black box feeding the indexer. It has a JSON-RPC interface you can call yourself, and it is the most direct way to inspect the chain with no wallet and no explorer in between. Ask it the current height, pull a block, check a transaction, all straight from a source you trust because you run it.',
           'Zebra guards that interface with a cookie. When zebrad starts it writes a small file holding a username and a password, and every request has to present them. The password rotates on every restart, which is a feature and not an annoyance, because a leaked one stops working the moment you reboot. You read the file, take the password half, and hand both to your request.',
+          'One wrinkle to know before you build higher. The indexer you are about to run cannot present that cookie, so when you wire it up you will turn cookie auth off and let the localhost binding do the guarding instead. Security here is layered, and deciding which layer does the work is a real operator decision. You are about to make it deliberately rather than discover it as a mystery 401.',
           'The call itself is a plain HTTP POST with a short JSON body naming the method. curl sends it and jq turns the dense answer into something you can read. Keep the RPC bound to localhost in zebrad.toml so only you, or your own private network over something like Tailscale, can reach it.',
         ],
       },
@@ -597,7 +598,7 @@ export const challenges: Challenge[] = [
         id: 'node',
         title: 'Run a Zebra testnet node',
         detail:
-          'Configure zebrad.toml first. Bind the RPC to localhost, turn on the auth cookie, and point the data directory at a drive with room. Then start zebrad on testnet and let it validate to the tip, watching the logs while peers connect and blocks verify.',
+          'Configure zebrad.toml first. Bind the RPC to localhost, leave cookie auth on (it is the default), and point the data directory at a drive with room. Then start zebrad on testnet and let it validate to the tip, watching the logs while peers connect and blocks verify. A full sync can take days even on good hardware, so let it run and check in.',
         verification: 'attested',
       },
       {
@@ -611,7 +612,7 @@ export const challenges: Challenge[] = [
         id: 'indexer',
         title: 'Serve compact blocks',
         detail:
-          'Run lightwalletd (or Zaino) against your node and confirm it answers a GetLightdInfo request. You are now the server side of challenge #1.',
+          'lightwalletd cannot present Zebra’s auth cookie, so first set enable_cookie_auth = false in zebrad.toml and restart, the trade-off from the lesson, safe while the RPC stays on localhost. Then run lightwalletd (or Zaino) against your node and confirm it answers a GetLightdInfo request. You are now the server side of challenge #1.',
         verification: 'attested',
       },
       {
