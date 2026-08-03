@@ -22,11 +22,11 @@ if [[ "${1:-}" == "--docker" ]]; then
     apt-get update -qq && apt-get install -y -qq clang curl git >/dev/null
     curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh >/dev/null
     rustup component add rust-src
-    git clone --depth 1 https://github.com/ChainSafe/WebZjs.git /work
+    git clone https://github.com/jinolabs-xyz/WebZjs.git /work && git -C /work checkout a50df944c32243cb8da9f86e7d52cb65ac926439
     cd /work/crates/webzjs-wallet
     wasm-pack build -t web --release --scope chainsafe \
       --out-dir ../../packages/webzjs-wallet \
-      --no-default-features --features="wasm wasm-parallel" \
+      --no-default-features --features="wasm no-bundler" \
       -Z build-std="panic_abort,std"
     cd /work && sh ./add-worker-module.sh || true
     cd /work/crates/webzjs-keys
@@ -43,8 +43,14 @@ fi
 
 command -v wasm-pack >/dev/null || npm install -g wasm-pack
 
-git clone --depth 1 https://github.com/ChainSafe/WebZjs.git "$WORK_DIR"
+# Our fork, pinned to an exact rev — upstream ChainSafe is unmaintained
+# (dead since 2026-04-16) and an unpinned clone made vendor builds
+# unreproducible. The NU6.3/Ironwood bump lands on this fork.
+WEBZJS_REPO="${WEBZJS_REPO:-https://github.com/jinolabs-xyz/WebZjs.git}"
+WEBZJS_REV="${WEBZJS_REV:-a50df944c32243cb8da9f86e7d52cb65ac926439}"
+git clone "$WEBZJS_REPO" "$WORK_DIR"
 cd "$WORK_DIR"
+git checkout --quiet "$WEBZJS_REV"
 # WebZjs pins its nightly in rust-toolchain.toml — do NOT override it.
 # Building on a newer nightly produces a wasm whose async gRPC calls hang.
 rustup toolchain install "$(grep -o 'nightly-[0-9-]*' rust-toolchain.toml)" \
@@ -82,7 +88,7 @@ fi
 
 (cd crates/webzjs-wallet && wasm-pack build -t web --release --scope chainsafe \
   --out-dir ../../packages/webzjs-wallet \
-  --no-default-features --features="wasm wasm-parallel" \
+  --no-default-features --features="wasm no-bundler" \
   -Z build-std="panic_abort,std")
 sh ./add-worker-module.sh || true
 (cd crates/webzjs-keys && wasm-pack build -t web --release --scope chainsafe \
