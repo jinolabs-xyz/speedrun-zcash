@@ -1,75 +1,118 @@
 # 🏃 Speedrun Zcash
 
-**Learn to build on Zcash by shipping real privacy apps** — a
-[Speedrun Ethereum](https://speedrunethereum.com)-style curriculum and platform
-for the Zcash ecosystem.
+**Go from zero to Zcash contributor.** Ten hands-on challenges that take you
+from "what is a shielded transaction" to your first merged pull request in the
+codebases that run Zcash.
 
-> Status: **early scaffolding**. We are building the foundation first:
-> **Scaffold-ZEC**, a batteries-included starter kit (Next.js + WebZjs WASM
-> light client) that every challenge will ride on — the Scaffold-ETH 2 of Zcash.
+**Live on testnet** → https://speedrun-zcash.aayushgiri1234.workers.dev
 
-## Why
+[![deploy](https://github.com/jinolabs-xyz/speedrun-zcash/actions/workflows/deploy.yml/badge.svg)](https://github.com/jinolabs-xyz/speedrun-zcash/actions/workflows/deploy.yml)
 
-Zcash has solid low-level tooling (librustzcash, Zebra, mobile SDKs, WebZjs)
-but no guided, challenge-based on-ramp for developers. Speedrun Ethereum showed
-the recipe: a starter kit that gets a beginner to a working full-stack app in
-minutes, plus progressive challenges that each ship something publicly
-verifiable. See [docs/curriculum.md](docs/curriculum.md) for the full
-10-challenge curriculum design.
+## What this is
 
-Zcash even gives us a native autograder Ethereum doesn't have: challenge
-completion is proven by sending a **shielded testnet transaction with your
-builder ID in the encrypted memo** to a challenge address — the platform holds
-the viewing key and verifies on-chain.
+Zcash has world-class low-level tooling and a world-class encyclopedia in
+[ZecHub](https://zechub.wiki). What it lacked was the gym, a guided path where
+you learn by doing, the way [Speedrun Ethereum](https://speedrunethereum.com)
+does it for Ethereum. Every challenge here ends with something real. A
+transaction you sent. A wallet you built. A node you ran. A pull request you
+landed upstream.
 
-## What's in this repo today
+You need no crypto background to start. Challenge #0 assumes nothing and
+explains everything. By challenge #9 you are reading protocol code and
+shipping fixes to it.
+
+## The track
+
+| # | Challenge | Level | You walk away with |
+|---|---|---|---|
+| 0 | First Shielded Transaction | Start from zero | A real wallet made in your terminal, funded from the faucet, and a shielded payment only its recipient can read |
+| 1 | Watch the Chain | Start from zero | The ability to read a block explorer and explain what the network provably cannot see |
+| 2 | Memo Messenger | Start from zero | Encrypted messaging over shielded memos |
+| 3 | Build a Light Wallet | Build with Zcash | Your own wallet built on the light client protocol |
+| 4 | Shielded Storefront | Build with Zcash | A store that detects payment with a viewing key, no account system needed |
+| 5 | Viewing Keys and Selective Disclosure | Build with Zcash | Working knowledge of the key tree, and an auditor view built from a viewing key |
+| 6 | Run the Stack | Under the hood | Your own node and indexer serving real light clients |
+| 7 | Notes, Nullifiers, Proofs | Under the hood | The mental model of what a zero-knowledge proof actually proves |
+| 8 | Ship Your Privacy App | Become a contributor | A privacy app of your own design, shipped |
+| 9 | First Upstream Contribution | Become a contributor | Your first merged PR in the Zcash ecosystem |
+
+Every challenge names the real codebase it introduces (zcash-devtool,
+lightwalletd, librustzcash, Zebra, orchard, and more), so finishing the track
+means you have met every library that matters and know what each one is for.
+
+## Verification you can trust
+
+Progress tracking is honest about what it can prove. Each step declares one of
+three verification levels, and the UI labels them.
+
+- **Attested.** Nothing lands on chain (like generating a seed), so your
+  signed word is recorded as exactly that.
+- **Chain.** You submit a transaction id and the server independently finds it
+  mined. This proves existence, not authorship, and we say so.
+- **Memo.** You send a shielded payment to the challenge address with your
+  builder ID in the encrypted memo. Only a transaction's author can write its
+  memo, so this is cryptographic proof the transaction was yours. Zcash gives
+  us a native autograder other chains cannot have.
+
+Your identity is a keypair created in your browser. No account, no password,
+no email, and nothing that links to your wallet or addresses.
+
+## Repo layout
 
 | Path | What it is |
 |---|---|
-| [`packages/scaffold-zec/`](packages/scaffold-zec) | The starter kit: Next.js app with an in-browser Zcash **testnet** light wallet (WebZjs) — create a wallet, sync via lightwalletd, view shielded balance, send shielded ZEC |
-| [`scripts/vendor-webzjs.sh`](scripts/vendor-webzjs.sh) | Builds the WebZjs WASM packages from source (they are not yet on npm) into `packages/scaffold-zec/vendor/` |
-| [`infra/run-testnet-proxy.sh`](infra/run-testnet-proxy.sh) | Local gRPC-web proxy → public testnet lightwalletd (`testnet.zec.rocks:443`) — required because browsers can't speak raw gRPC |
-| [`docs/`](docs) | Curriculum design + research notes, including [WebZjs API notes](docs/webzjs-api-notes.md) |
+| [`packages/scaffold-zec/`](packages/scaffold-zec) | The platform. Next.js app with the challenge track, lesson content, verification server, and an embedded WebZjs light wallet for the in-browser challenges |
+| [`scripts/install-devtool.sh`](scripts/install-devtool.sh) | Builds zcash-devtool at a revision we test end to end. Challenge #0's step one |
+| [`scripts/vendor-webzjs.sh`](scripts/vendor-webzjs.sh) | Builds the WebZjs wasm packages from source into `packages/scaffold-zec/vendor/` |
+| [`scripts/r2-usage-guard.mjs`](scripts/r2-usage-guard.mjs) | Daily CI check that object storage usage stays inside the free tier |
+| [`docs/`](docs) | Curriculum design and research notes |
 
-## Quickstart
-
-Prereqs: Node ≥ 20, Rust (rustup), Go (for `grpcwebproxy`).
+## Develop locally
 
 ```bash
-# 1. Build the WebZjs WASM packages (one-time, ~10-20 min)
-./scripts/vendor-webzjs.sh
-
-# 2. Run a local gRPC-web proxy to the public testnet lightwalletd
-./infra/run-testnet-proxy.sh   # serves http://localhost:8080
-
-# 3. Run the starter app
 cd packages/scaffold-zec
 npm install
-npm run dev                    # http://localhost:3000
+npm run dev
 ```
 
-Get testnet ZEC from the [testnet faucet](https://faucet.zecpages.com/) to
-play with sending.
+That gives you the site, the lessons, and the full verification server against
+a local database. The embedded wallet used by challenges #1 and up needs the
+wasm build, which is deliberately not in git (57 MB). Build it once with
+`scripts/vendor-webzjs.sh` (needs Rust nightly and zig, the script explains
+itself). Challenge #0 needs no wasm at all, its wallet is the learner's own
+terminal.
 
-## Roadmap
+## How it deploys
 
-1. **Scaffold-ZEC MVP** (this repo, now): wallet create/restore, sync,
-   shielded balance, send — the components every challenge needs.
-2. **Memo support**: WebZjs currently builds payments with
-   `Payment::without_memo` — memo sending isn't exposed yet. Upstreaming this
-   to [ChainSafe/WebZjs](https://github.com/ChainSafe/WebZjs) unblocks the
-   memo-based autograder and Challenge 1 (Memo Messenger).
-3. **Challenges 0–2** + the memo autograder (platform holds a viewing key,
-   scans a challenge address, auto-verifies completions).
-4. **Platform site**: challenge pages, progressive unlock, builder profiles.
-5. **Community layer**: builder guild, batches, guided Zcash Community Grants
-   pipeline.
+Every commit on `master` ships to production automatically. The workflow
+builds the app with OpenNext for Cloudflare Workers, deploys, then smoke-tests
+the live deployment and fails red if anything broke. The wasm is served from
+R2 through an edge cache, progress lives in D1, and a daily job alarms before
+usage can leave the free tier.
 
 ## Contributing
 
-Early days — issues and PRs welcome. The highest-impact contribution right now
-is memo support in WebZjs (see roadmap #2).
+The [issue tracker](https://github.com/jinolabs-xyz/speedrun-zcash/issues) is
+the roadmap, and issues describe the problem and the intended shape of the
+fix. Lesson content lives in
+[`lib/challenges.ts`](packages/scaffold-zec/lib/challenges.ts). Corrections
+with sources are the most valuable PRs a curriculum can get.
+
+If the track itself teaches you enough to fix something here, that is the
+product working as intended. Challenge #9 exists for exactly that moment.
+
+## The ecosystem this points at
+
+- [zcash-devtool](https://github.com/zcash/zcash-devtool), the multitool you
+  meet in challenge #0
+- [Zcash testnet faucet](https://zcashfaucet.jinolabs.xyz), funds every run
+  through the track
+- [ZecHub](https://zechub.wiki), the encyclopedia we link instead of rewriting
+- [librustzcash](https://github.com/zcash/librustzcash),
+  [Zebra](https://github.com/ZcashFoundation/zebra),
+  [lightwalletd](https://github.com/zcash/lightwalletd), the codebases the
+  track funnels contributors toward
 
 ## License
 
-MIT
+[MIT](LICENSE)
