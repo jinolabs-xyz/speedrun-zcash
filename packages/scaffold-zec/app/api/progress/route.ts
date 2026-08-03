@@ -25,12 +25,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.reason }, { status: 422 });
   }
 
-  recordCompletion(builderId, {
+  await recordCompletion(builderId, {
     challengeSlug,
     stepId,
     verification: result.verification,
     evidence: result.evidence,
   });
 
-  return NextResponse.json({ completions: listCompletions(builderId) });
+  return NextResponse.json({ completions: await listCompletions(builderId) });
 }

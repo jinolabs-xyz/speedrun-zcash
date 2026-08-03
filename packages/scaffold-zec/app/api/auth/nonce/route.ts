@@ -22,12 +22,12 @@ export async function POST(request: Request) {
 
   // First sight of a builder registers their key; later visits must match it,
   // otherwise anyone could claim an existing builder ID with their own key.
-  const known = getBuilderPublicKey(builderId);
+  const known = await getBuilderPublicKey(builderId);
   if (known === null) {
-    upsertBuilder(builderId, publicKey);
+    await upsertBuilder(builderId, publicKey);
   } else if (known !== publicKey) {
     return NextResponse.json({ error: 'key mismatch' }, { status: 403 });
   }
 
-  return NextResponse.json({ nonce: issueNonce(builderId, NONCE_TTL_MS) });
+  return NextResponse.json({ nonce: await issueNonce(builderId, NONCE_TTL_MS) });
 }

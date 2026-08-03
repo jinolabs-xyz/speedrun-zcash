@@ -1,56 +1,81 @@
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 /**
- * SQLite is deliberate for now: single file, zero infrastructure, and the
- * query surface below is small enough that moving to Postgres later is a
- * driver swap rather than a rewrite. Requires the Node runtime — route
- * handlers that touch this must not run on edge.
+ * D1 (Cloudflare's SQLite) replaced the better-sqlite3 file when the app
+ * moved onto Workers — same schema, same queries, but every call is now
+ * async because D1 only speaks promises. Local dev gets a local D1 instance
+ * automatically: initOpenNextCloudflareForDev() in next.config.mjs wires the
+ * bindings from wrangler.jsonc into `next dev`, persisted under .wrangler/.
  */
 
-const DB_PATH = process.env.DATABASE_PATH ?? '.data/speedrun.db';
-
-let db: Database.Database | null = null;
-
-function connect(): Database.Database {
-  mkdirSync(dirname(DB_PATH), { recursive: true });
-  const handle = new Database(DB_PATH);
-  handle.pragma('journal_mode = WAL');
-  handle.exec(`
-    CREATE TABLE IF NOT EXISTS builders (
-      id          TEXT PRIMARY KEY,
-      public_key  TEXT NOT NULL,
-      created_at  INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS nonces (
-      nonce      TEXT PRIMARY KEY,
-      builder_id TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS completions (
-      builder_id     TEXT NOT NULL,
-      challenge_slug TEXT NOT NULL,
-      step_id        TEXT NOT NULL,
-      verification   TEXT NOT NULL,
-      evidence       TEXT,
-      created_at     INTEGER NOT NULL,
-      PRIMARY KEY (builder_id, challenge_slug, step_id)
-    );
-    CREATE TABLE IF NOT EXISTS memo_proofs (
-      txid         TEXT PRIMARY KEY,
-      builder_id   TEXT,
-      memo         TEXT NOT NULL,
-      mined_height INTEGER,
-      value        INTEGER NOT NULL,
-      seen_at      INTEGER NOT NULL
-    );
-  `);
-  return handle;
+// Minimal structural types for the D1 surface we use. Pulling in the full
+// generated Workers runtime types would collide with the DOM lib that the
+// rest of the app compiles against.
+interface D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement;
+  first<T>(): Promise<T | null>;
+  run(): Promise<unknown>;
+  all<T>(): Promise<{ results: T[] }>;
 }
 
-function conn(): Database.Database {
-  return (db ??= connect());
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  batch(statements: D1PreparedStatement[]): Promise<unknown[]>;
+}
+
+// CREATE IF NOT EXISTS on first touch, like the old connect() did — no
+// migration step to forget. One batch per isolate; the promise is cached so
+// concurrent requests don't race it.
+let schemaReady: Promise<unknown> | null = null;
+
+function conn(): D1Database {
+  const { env } = getCloudflareContext();
+  const db = (env as { DB?: D1Database }).DB;
+  if (!db) {
+    throw new Error(
+      'D1 binding "DB" is missing — check d1_databases in wrangler.jsonc',
+    );
+  }
+  return db;
+}
+
+async function ready(): Promise<D1Database> {
+  const db = conn();
+  schemaReady ??= db.batch([
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS builders (
+        id          TEXT PRIMARY KEY,
+        public_key  TEXT NOT NULL,
+        created_at  INTEGER NOT NULL
+      )`),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS nonces (
+        nonce      TEXT PRIMARY KEY,
+        builder_id TEXT NOT NULL,
+        expires_at INTEGER NOT NULL
+      )`),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS completions (
+        builder_id     TEXT NOT NULL,
+        challenge_slug TEXT NOT NULL,
+        step_id        TEXT NOT NULL,
+        verification   TEXT NOT NULL,
+        evidence       TEXT,
+        created_at     INTEGER NOT NULL,
+        PRIMARY KEY (builder_id, challenge_slug, step_id)
+      )`),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS memo_proofs (
+        txid         TEXT PRIMARY KEY,
+        builder_id   TEXT,
+        memo         TEXT NOT NULL,
+        mined_height INTEGER,
+        value        INTEGER NOT NULL,
+        seen_at      INTEGER NOT NULL
+      )`),
+  ]);
+  await schemaReady;
+  return db;
 }
 
 export interface Completion {
@@ -70,12 +95,15 @@ export interface MemoProof {
 }
 
 /**
- * Written by scripts/memo-ingest.mjs after syncing the challenge wallet.
- * builder_id is pre-parsed from the memo at ingest time so verification is a
- * single indexed lookup; the raw memo is kept for auditing mismatches.
+ * Written by the memo ingest after syncing the challenge wallet (in
+ * production via the authed /api/memo-proofs route, since the ingest box
+ * has no D1 binding). builder_id is pre-parsed from the memo at ingest
+ * time so verification is a single indexed lookup; the raw memo is kept
+ * for auditing mismatches.
  */
-export function upsertMemoProof(p: MemoProof): void {
-  conn()
+export async function upsertMemoProof(p: MemoProof): Promise<void> {
+  const db = await ready();
+  await db
     .prepare(
       `INSERT INTO memo_proofs (txid, builder_id, memo, mined_height, value, seen_at)
        VALUES (?, ?, ?, ?, ?, ?)
@@ -84,24 +112,25 @@ export function upsertMemoProof(p: MemoProof): void {
          memo         = excluded.memo,
          mined_height = excluded.mined_height`,
     )
-    .run(p.txid, p.builderId, p.memo, p.minedHeight, p.value, Date.now());
+    .bind(p.txid, p.builderId, p.memo, p.minedHeight, p.value, Date.now())
+    .run();
 }
 
-export function getMemoProof(txid: string): MemoProof | null {
-  const row = conn()
+export async function getMemoProof(txid: string): Promise<MemoProof | null> {
+  const db = await ready();
+  const row = await db
     .prepare(
       `SELECT txid, builder_id, memo, mined_height, value
        FROM memo_proofs WHERE txid = ?`,
     )
-    .get(txid) as
-    | {
-        txid: string;
-        builder_id: string | null;
-        memo: string;
-        mined_height: number | null;
-        value: number;
-      }
-    | undefined;
+    .bind(txid)
+    .first<{
+      txid: string;
+      builder_id: string | null;
+      memo: string;
+      mined_height: number | null;
+      value: number;
+    }>();
   if (!row) return null;
   return {
     txid: row.txid,
@@ -112,46 +141,55 @@ export function getMemoProof(txid: string): MemoProof | null {
   };
 }
 
-export function upsertBuilder(id: string, publicKey: string): void {
-  conn()
+export async function upsertBuilder(id: string, publicKey: string): Promise<void> {
+  const db = await ready();
+  await db
     .prepare(
       `INSERT INTO builders (id, public_key, created_at) VALUES (?, ?, ?)
        ON CONFLICT(id) DO NOTHING`,
     )
-    .run(id, publicKey, Date.now());
+    .bind(id, publicKey, Date.now())
+    .run();
 }
 
-export function getBuilderPublicKey(id: string): string | null {
-  const row = conn()
+export async function getBuilderPublicKey(id: string): Promise<string | null> {
+  const db = await ready();
+  const row = await db
     .prepare('SELECT public_key FROM builders WHERE id = ?')
-    .get(id) as { public_key: string } | undefined;
+    .bind(id)
+    .first<{ public_key: string }>();
   return row?.public_key ?? null;
 }
 
-export function issueNonce(builderId: string, ttlMs: number): string {
+export async function issueNonce(builderId: string, ttlMs: number): Promise<string> {
+  const db = await ready();
   const nonce = crypto.randomUUID();
-  conn()
+  await db
     .prepare('INSERT INTO nonces (nonce, builder_id, expires_at) VALUES (?, ?, ?)')
-    .run(nonce, builderId, Date.now() + ttlMs);
+    .bind(nonce, builderId, Date.now() + ttlMs)
+    .run();
   return nonce;
 }
 
-/** Single-use: a nonce is consumed whether or not the signature checks out. */
-export function consumeNonce(nonce: string, builderId: string): boolean {
-  const row = conn()
-    .prepare('SELECT builder_id, expires_at FROM nonces WHERE nonce = ?')
-    .get(nonce) as { builder_id: string; expires_at: number } | undefined;
-  conn().prepare('DELETE FROM nonces WHERE nonce = ?').run(nonce);
+/** Single-use: a nonce is consumed whether or not the signature checks out.
+ *  DELETE ... RETURNING makes the read-and-burn a single atomic statement. */
+export async function consumeNonce(nonce: string, builderId: string): Promise<boolean> {
+  const db = await ready();
+  const row = await db
+    .prepare('DELETE FROM nonces WHERE nonce = ? RETURNING builder_id, expires_at')
+    .bind(nonce)
+    .first<{ builder_id: string; expires_at: number }>();
   return (
     !!row && row.builder_id === builderId && row.expires_at > Date.now()
   );
 }
 
-export function recordCompletion(
+export async function recordCompletion(
   builderId: string,
   c: Omit<Completion, 'createdAt'>,
-): void {
-  conn()
+): Promise<void> {
+  const db = await ready();
+  await db
     .prepare(
       `INSERT INTO completions
          (builder_id, challenge_slug, step_id, verification, evidence, created_at)
@@ -160,37 +198,37 @@ export function recordCompletion(
          verification = excluded.verification,
          evidence     = excluded.evidence`,
     )
-    .run(
+    .bind(
       builderId,
       c.challengeSlug,
       c.stepId,
       c.verification,
       c.evidence,
       Date.now(),
-    );
+    )
+    .run();
 }
 
-export function listCompletions(builderId: string): Completion[] {
-  return conn()
+export async function listCompletions(builderId: string): Promise<Completion[]> {
+  const db = await ready();
+  const { results } = await db
     .prepare(
       `SELECT challenge_slug, step_id, verification, evidence, created_at
        FROM completions WHERE builder_id = ? ORDER BY created_at`,
     )
-    .all(builderId)
-    .map((r) => {
-      const row = r as {
-        challenge_slug: string;
-        step_id: string;
-        verification: 'attested' | 'chain' | 'memo';
-        evidence: string | null;
-        created_at: number;
-      };
-      return {
-        challengeSlug: row.challenge_slug,
-        stepId: row.step_id,
-        verification: row.verification,
-        evidence: row.evidence,
-        createdAt: row.created_at,
-      };
-    });
+    .bind(builderId)
+    .all<{
+      challenge_slug: string;
+      step_id: string;
+      verification: 'attested' | 'chain' | 'memo';
+      evidence: string | null;
+      created_at: number;
+    }>();
+  return results.map((row) => ({
+    challengeSlug: row.challenge_slug,
+    stepId: row.step_id,
+    verification: row.verification,
+    evidence: row.evidence,
+    createdAt: row.created_at,
+  }));
 }

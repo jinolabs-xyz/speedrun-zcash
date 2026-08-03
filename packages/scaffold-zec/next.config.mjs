@@ -1,5 +1,14 @@
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
+// No-op outside `next dev`: wires the wrangler.jsonc bindings (local D1 etc.)
+// into the dev server so server code sees the same env shape as on Workers.
+initOpenNextCloudflareForDev();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // A stray lockfile in the home directory makes Next guess the wrong
+  // workspace root, which would also mislead OpenNext's file tracing.
+  outputFileTracingRoot: import.meta.dirname,
   // StrictMode's double-mount initializes the WebZjs wasm module twice
   // concurrently, which wedges its async runtime — keep it off.
   reactStrictMode: false,

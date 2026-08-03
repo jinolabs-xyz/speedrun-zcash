@@ -19,7 +19,6 @@
     "@noble/hashes": "^2.2.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@vercel/analytics": "^2.0.1",
-    "better-sqlite3": "^13.0.1",
     "framer-motion": "^12.42.2",
     "idb-keyval": "^6.2.1",
     "jose": "^6.2.3",
@@ -30,11 +29,12 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
+    "@opennextjs/cloudflare": "^1.20.2",
     "@types/node": "^22.10.10",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wrangler": "^4.118.0"
   }
 }

@@ -15,6 +15,6 @@ export async function GET() {
 
   return NextResponse.json({
     builderId,
-    completions: listCompletions(builderId),
+    completions: await listCompletions(builderId),
   });
 }
