@@ -73,9 +73,13 @@ async function serveWebzjs(
   // Every R2 read is a billed operation and these artifacts change only on
   // a vendor re-upload, so serve repeats from the edge cache. Browser cache
   // alone doesn't help first visits, and 57 MB of wasm per new learner adds
-  // up against the free tier.
-  const cached = await edgeCache.match(request);
-  if (cached) return cached;
+  // up against the free tier. The cache key is always a GET: the Cache API
+  // refuses HEAD puts, and a HEAD should see identical headers anyway.
+  const cacheKey = new Request(url.toString());
+  const cached = await edgeCache.match(cacheKey);
+  if (cached) {
+    return request.method === 'HEAD' ? new Response(null, cached) : cached;
+  }
 
   const key = url.pathname.slice('/webzjs/'.length);
   const object = await env.WEBZJS.get(key);
@@ -96,8 +100,9 @@ async function serveWebzjs(
     },
   });
 
-  ctx.waitUntil(edgeCache.put(request, response.clone()));
-  return response;
+  ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+  // A HEAD still warms the cache above; it just answers without the body.
+  return request.method === 'HEAD' ? new Response(null, response) : response;
 }
 
 export default {
@@ -111,7 +116,8 @@ export default {
     }
 
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/webzjs/') && request.method === 'GET') {
+    const readMethod = request.method === 'GET' || request.method === 'HEAD';
+    if (url.pathname.startsWith('/webzjs/') && readMethod) {
       return serveWebzjs(request, env, ctx, url);
     }
 
