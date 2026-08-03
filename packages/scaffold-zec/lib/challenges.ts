@@ -447,6 +447,8 @@ export const challenges: Challenge[] = [
         body: [
           'Strip away the UI and every light wallet is five capabilities. Turn a seed into keys, turn keys into addresses, scan the chain for your notes, show what they add up to, and spend them. You have been using a finished one since challenge #0, and now you assemble your own from the same parts, so the mystery goes away for good.',
           'You will build against WebZjs in the browser, but every function you call is a thin wrapper over librustzcash, the Rust crates that sit inside essentially every Zcash wallet in existence. Learn this API surface once and you can read the source of all of them.',
+          'One thing to know before you start, because it changes how you test. The WebZjs build we ship is mid-upgrade: it reads Sapling notes correctly and cannot see the Ironwood pool yet, which is where a payment to a unified address now lands. So fund your wallet with a drip sent to a Sapling address rather than to a unified one, and your balance will appear exactly as it should. Ask the faucet for a ztestsapling target.',
+          'That gap is not a detail we are hiding, it is an open piece of work in our fork of WebZjs and it is tracked as an issue on this project. If you would rather fix the wallet than build one, that is a legitimate way to spend this challenge, and it is the kind of contribution challenge #9 is about.',
         ],
       },
       {
@@ -491,7 +493,7 @@ export const challenges: Challenge[] = [
         id: 'spend',
         title: 'Spend from your own build',
         detail:
-          'Send a payment to the challenge address from the wallet you assembled, not the one this site ships. Same proof, your code.',
+          'Send a payment to the challenge address from the wallet you assembled, not the command line wallet you have been using since challenge #0. Same proof, your code.',
         verification: 'chain',
       },
     ],
