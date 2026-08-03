@@ -836,13 +836,14 @@ export const challenges: Challenge[] = [
         heading: 'Design the money flow first',
         body: [
           'Before any code, draw where value moves, and mark every point where it would touch the transparent pool or leak metadata. Who pays whom? What does each party get to see, and is that a viewing key, a disclosure, or nothing? You now have a full toolbox of privacy shapes from challenges #4 and #5, and choosing among them IS the design work.',
+          'Mark the pools on that diagram too. Money arriving at a unified address lands in Ironwood, and if your design ever moves funds out of the older Orchard pool, that crossing publishes the amount. So a flow can be perfectly shielded end to end and still have one step where a number becomes public. Better to find that on paper than in an explorer after launch.',
           'Then fork Scaffold-ZEC and strip it. The wallet provider, the components, and the proxy setup stay, and the curriculum goes. What remains is a working shielded-app skeleton you already understand line by line.',
         ],
       },
       {
         heading: 'Shipping is a skill, so practice all of it',
         body: [
-          'Deploy it. Write the README you wish every project had, covering what it does, the privacy model in one paragraph, and how to run it. Record a ninety-second demo. This artifact is your proof-of-work for grants, collaborators, and employers in this ecosystem, so polish the outside like you engineered the inside.',
+          'Deploy it. Write the README you wish every project had, covering what it does, the privacy model in one paragraph, and how to run it. Make that paragraph name the pools your funds pass through, where change lands, and any point where an amount becomes public. A reviewer can check that claim against your app’s own transactions, which is what makes it worth writing. Record a ninety-second demo. This artifact is your proof-of-work for grants, collaborators, and employers in this ecosystem, so polish the outside like you engineered the inside.',
         ],
       },
     ],
