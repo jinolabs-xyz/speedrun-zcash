@@ -268,7 +268,7 @@ export const challenges: Challenge[] = [
     slug: 'watch-the-chain',
     number: 1,
     difficulty: 'intro',
-    estMinutes: 30,
+    estMinutes: 40,
     emoji: '🔭',
     title: 'Watch the Chain',
     tagline:
@@ -293,8 +293,9 @@ export const challenges: Challenge[] = [
       {
         heading: 'How your wallet reads the chain',
         body: [
-          'Your browser wallet never downloads the whole blockchain, which would take days. Instead it talks to a server called lightwalletd, which serves "compact blocks". Those are stripped-down summaries containing just enough of each shielded output for a wallet to check, using its keys, whether anything inside belongs to it. That checking is called trial decryption. Your wallet literally tries its key on every note that goes by, and almost all of them fail.',
+          'Your wallet never downloads the whole blockchain, which would take days. Instead it talks to a server called lightwalletd, which serves "compact blocks". Those are stripped-down summaries containing just enough of each shielded output for a wallet to check, using its keys, whether anything inside belongs to it. That checking is called trial decryption. Your wallet literally tries its key on every note that goes by, and almost all of them fail.',
           'This design means the server never learns your balance or your keys. It also means someone has to run these servers, and later in the track that someone will be you.',
+          'Compact blocks have a shape, and that shape changes when the protocol does. Ironwood arrived with a new transaction version carrying a whole new bundle of shielded data, so the compact block format grew fields to describe it. A wallet built before that upgrade reads the new blocks, finds no fields it recognizes, and reports a balance of zero without a single error. That is not a hypothetical. It happened to the wallet this site used to ship, and it is why "keep up with consensus" is a wallet requirement and not a nice-to-have.',
         ],
       },
       {
@@ -318,6 +319,13 @@ export const challenges: Challenge[] = [
         title: 'Trace a transparent address',
         detail:
           'Pick any t-address from a recent testnet block and follow its history, where its coins came from and where they went. You are building the surveillance graph privacy tech defends against.',
+        verification: 'attested',
+      },
+      {
+        id: 'spot-v6',
+        title: 'Spot the upgrade in the wild',
+        detail:
+          'Find a recent transaction in version 6 format and an older one in version 5, and say what the newer one carries that the older does not. The answer is an Ironwood bundle sitting alongside the Orchard one. You have just read a network upgrade off the chain itself.',
         verification: 'attested',
       },
       {
@@ -410,7 +418,7 @@ export const challenges: Challenge[] = [
     slug: 'build-a-light-wallet',
     number: 3,
     difficulty: 'medium',
-    estMinutes: 120,
+    estMinutes: 150,
     emoji: '👛',
     title: 'Build a Light Wallet',
     tagline:
@@ -444,6 +452,7 @@ export const challenges: Challenge[] = [
         body: [
           'Deriving keys takes microseconds, but knowing your balance takes scanning. A wallet must trial-decrypt every shielded output since its "birthday", the block height when the seed was created. Scan from the birthday and a new wallet syncs in seconds. Scan from genesis and users watch a spinner for an hour and blame you.',
           'Every wallet UX decision that matters, from progress bars to spendable-vs-pending to "why is my balance zero right after restore", is downstream of this one fact.',
+          'Restoring is subtler than syncing, and this is where wallets earn their reputation. Ironwood allows two ways to derive the keys an address was built from, so a wallet restoring a seed it has never seen does not know which was used. The rule is to trial-decrypt both ways until funds show up under one of them, then stop scanning the other. Get this wrong and the wallet reports zero on an account that holds money, which is the worst bug a wallet can have because it looks like a working wallet.',
         ],
       },
     ],
@@ -459,7 +468,14 @@ export const challenges: Challenge[] = [
         id: 'sync',
         title: 'Sync from a birthday',
         detail:
-          'Wire your wallet to lightwalletd, set the birthday to the seed’s creation height, and sync. Show a real progress indicator, height scanned over chain tip, like the one on this site.',
+          'Wire your wallet to lightwalletd, set the birthday to the seed’s creation height, and sync. Show a real progress indicator, height scanned over chain tip, like the one on this site. Report the balance per pool rather than as one number, because a learner (and a user) needs to see which pool holds what.',
+        verification: 'attested',
+      },
+      {
+        id: 'birthday-experiment',
+        title: 'Break it with the wrong birthday',
+        detail:
+          'Restore the same seed three times, once with the right birthday, once far too early, once too late. Time each sync and compare the balances. The too-early restore only wastes minutes. The too-late one reports a wrong balance and no error at all, which is the failure the gotcha below is about.',
         verification: 'attested',
       },
       {
@@ -750,6 +766,13 @@ export const challenges: Challenge[] = [
           'Early Zcash proofs needed a "trusted setup" ceremony, with parameters generated in a ritual where if EVERY participant colluded, fake coins were possible. Orchard’s proving system, Halo 2, eliminated the ceremony entirely, with no sacred parameters and nothing to trust but math. In this challenge you rebuild the data structures in miniature, a toy commitment tree and nullifier set, so the real circuit stops being folklore.',
         ],
       },
+      {
+        heading: 'Why there is a newer pool than Orchard',
+        body: [
+          'Now that you know what a commitment is, you can understand why Zcash added a pool after Orchard. Orchard commitments rest on a hardness assumption that a large quantum computer would break, and a broken commitment scheme does not just leak privacy, it lets someone mint coins that never existed. Ironwood answers that by binding every field of the note into the commitment randomness rather than only part of it, which makes the commitment binding even against an adversary who can solve the old problem. If that day ever comes, funds in Ironwood can be recovered rather than counterfeited.',
+          'The other half of the change is a lifecycle you can watch. Orchard is now closed to new value. It can still be spent, and money leaving it crosses a turnstile that publicly reveals the amount, which is how the network keeps proving no coins were invented. Sprout was retired the same way years earlier. Pools are versioned software with a beginning and an end, and knowing that is the difference between memorizing today’s Zcash and understanding it.',
+        ],
+      },
     ],
     steps: [
       {
@@ -770,7 +793,7 @@ export const challenges: Challenge[] = [
         id: 'anchor',
         title: 'Find it all in a real transaction',
         detail:
-          'Take your challenge #0 transaction apart with an explorer or the orchard crate docs. Locate the anchor, the nullifiers, and the proof, and say what each one is doing.',
+          'Run inspect from challenge #0 on your own raw transaction. It names every part and validates as it goes, so locate the anchor, the nullifiers, and the proof, and say what each one is doing. Then inspect a version 6 transaction and find the Ironwood bundle sitting parallel to the Orchard one.',
         verification: 'attested',
       },
     ],
