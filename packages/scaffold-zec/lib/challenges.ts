@@ -766,7 +766,7 @@ export const challenges: Challenge[] = [
       {
         heading: 'What the proof actually proves',
         body: [
-          'When your browser spent thirty seconds "building a proof," it was constructing a zero-knowledge argument for exactly four statements. One, a note with this value exists in the commitment tree, and here is a Merkle path to the anchor. Two, I hold its spending key. Three, this nullifier is correctly derived from that note. Four, value in equals value out plus fee. The chain verifies all four while learning none of the witnesses.',
+          'When your machine paused on "building a proof" back in challenge #0, it was constructing a zero-knowledge argument for exactly four statements. One, a note with this value exists in the commitment tree, and here is a Merkle path to the anchor. Two, I hold its spending key. Three, this nullifier is correctly derived from that note. Four, value in equals value out plus fee. The chain verifies all four while learning none of the witnesses.',
           'That is the whole magic, stated plainly. Not "trust me" but "verify this equation."',
         ],
       },
