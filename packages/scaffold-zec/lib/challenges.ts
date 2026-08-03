@@ -548,7 +548,7 @@ export const challenges: Challenge[] = [
         id: 'uri',
         title: 'Generate payment requests',
         detail:
-          'For each product, produce a ZIP-321 URI and QR with the price and an order-ID memo. Scan it with your wallet and confirm every field prefills.',
+          'For each product, produce a ZIP-321 URI and QR with the price and an order-ID memo. Scan it with your wallet and confirm every field prefills. Start from the stub in starters/zip321-payment-requests and run npm run test:starters until the suite is green.',
         verification: 'attested',
       },
       {
@@ -789,14 +789,14 @@ export const challenges: Challenge[] = [
         id: 'tree',
         title: 'Build a toy commitment tree',
         detail:
-          'Implement a small Merkle tree of note commitments (any language). Add notes, compute the root, and produce a membership path, your miniature anchor.',
+          'Implement a small Merkle tree of note commitments. Add notes, compute the root, and produce a membership path, your miniature anchor. The stub and its test suite are in starters/note-commitment-tree, or work in any language you like and use the tests as the specification.',
         verification: 'attested',
       },
       {
         id: 'nullify',
         title: 'Enforce no-double-spend',
         detail:
-          'Add a nullifier set on top. Spending a note reveals its serial, respending trips the check, and an observer of your log still cannot match serials to commitments.',
+          'Add a nullifier set on top. Spending a note reveals its serial, respending trips the check, and an observer of your log still cannot match serials to commitments. The same starter suite grades this half.',
         verification: 'attested',
       },
       {
