@@ -1,9 +1,10 @@
 /**
  * Extract the Sapling receiver from a unified address, client-side.
  *
- * Since NU6.3 "Ironwood" (ZIP 258) the Orchard pool can only be spent
- * from, not added to, so new shielded value from a UA payment lands in
- * Ironwood — which our NU6-era WebZjs build cannot scan, so funds sent
+ * Since NU6.3 "Ironwood" the Orchard pool can only be spent from, not
+ * added to (the normative rule is ZIP 258's; ZIP 2006 has the matching
+ * title but is a reserved stub with no text), so new shielded value from
+ * a UA payment lands in Ironwood — which our NU6-era WebZjs build cannot scan, so funds sent
  * to the UA never show up. Funds sent to the bare Sapling address
  * land as Sapling outputs, which scan fine. The wasm exposes no way to
  * get that address, so we decode the UA ourselves per ZIP 316:
