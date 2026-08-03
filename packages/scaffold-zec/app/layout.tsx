@@ -11,7 +11,7 @@ import { CornerStatus } from '../components/CornerStatus';
 export const metadata: Metadata = {
   title: 'Speedrun Zcash',
   description:
-    'An interactive journey into the Zcash ecosystem. Start with zero crypto knowledge and finish contributing to the codebases Zcash runs on, through hands-on challenges with a real shielded wallet in your browser.',
+    'An interactive journey into the Zcash ecosystem. Start with zero crypto knowledge and finish contributing to the codebases Zcash runs on, through hands-on challenges against live Zcash testnet.',
 };
 
 export default function RootLayout({

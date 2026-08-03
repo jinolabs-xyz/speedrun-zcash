@@ -31,19 +31,19 @@ const FAQS = [
     id: 'install',
     question: 'What do I need to install?',
     answer:
-      'Nothing. The wallet is a Zcash light client compiled to WebAssembly, so it runs in your browser tab. Later challenges do ask you to run your own node and indexer, but that is opt-in.',
+      'Rust, and only for the first challenge. One command from rustup.rs installs it, then our script builds zcash-devtool, the command line wallet the Zcash core developers use themselves. Several later challenges use a wallet that runs in your browser tab instead, with nothing to install, and the node and indexer challenge is the one that asks for real infrastructure.',
   },
   {
     id: 'keys',
     question: 'Where do my keys live?',
     answer:
-      'Your seed is generated in your browser and never sent anywhere. Because this is a learning tool on testnet, it is kept in local storage so the wallet survives a refresh, which is exactly why you should never reuse one of these seeds for real funds.',
+      'On your machine, and never anywhere else. The wallet you build in the first challenge keeps its seed encrypted in a directory you own. The browser wallet used by later challenges generates its seed in the page and keeps it in local storage so it survives a refresh, which is exactly why you should never reuse one of these seeds for real funds. Your progress identity is a separate random secret your browser makes the first time you connect, so it is not derived from either wallet.',
   },
   {
     id: 'slow',
     question: 'Why does sending take so long?',
     answer:
-      'Because your browser is genuinely building a zero-knowledge proof, not calling out to a server that does it for you. The current build proves on a single thread, so expect around thirty seconds. A multi-threaded build will cut that down.',
+      'Because a zero-knowledge proof is genuinely being built on your own machine, not fetched from a server that does it for you. In the browser wallet that means around thirty seconds, since the current build proves on a single thread. A multi-threaded build will cut that down.',
   },
   {
     id: 'progress',

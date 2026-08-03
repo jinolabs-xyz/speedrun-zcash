@@ -16,7 +16,7 @@ export function ChainTip() {
   return (
     <div className="meta">
       {height ? `block ${height.toLocaleString()}` : 'Zcash testnet'} · 24-word
-      seeds · proofs built in-browser
+      seeds · proofs built on your machine
     </div>
   );
 }

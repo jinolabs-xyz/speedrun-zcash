@@ -16,12 +16,12 @@ const STEPS = [
   {
     label: '02 · BUILD',
     title: 'Do the real thing',
-    body: 'A live shielded wallet is embedded in every challenge. Real keys, real proofs, real testnet blocks.',
+    body: 'Every challenge is something you do on live testnet. Real keys, real proofs, real blocks, from your terminal or from a wallet embedded in the page.',
   },
   {
     label: '03 · CLEAR',
     title: 'Steps check themselves',
-    body: 'The run panel watches wallet state and ticks steps off as you go. No self-reporting.',
+    body: 'Steps that move money are checked against the chain, and an encrypted memo proves the payment was yours. The rest are marked as your own word, plainly.',
   },
 ];
 
