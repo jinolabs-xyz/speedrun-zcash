@@ -41,7 +41,7 @@ export async function verifyStep(
   if (!txid) return { ok: false, reason: 'this step requires a txid' };
 
   if (step.verification === 'memo') {
-    const proof = getMemoProof(txid);
+    const proof = await getMemoProof(txid);
     if (!proof) {
       return {
         ok: false,

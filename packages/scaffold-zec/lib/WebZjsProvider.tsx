@@ -32,15 +32,20 @@ import type { WebWallet, WalletSummary } from '@chainsafe/webzjs-wallet';
 
 type WebZjsModule = typeof import('@chainsafe/webzjs-wallet');
 
+// Where the unbundled module lives. Local dev serves it from public/webzjs;
+// hosts that cannot ship a 57 MB file in their asset bundle point this at
+// wherever the artifacts actually live (same-origin paths keep COEP happy
+// without any CORS/CORP dance). Inlined at build time like all NEXT_PUBLIC_*.
+const WEBZJS_BASE_URL = process.env.NEXT_PUBLIC_WEBZJS_BASE_URL || '/webzjs';
+
 let webzjsModule: Promise<WebZjsModule> | null = null;
 
 function loadWebZjs(): Promise<WebZjsModule> {
   webzjsModule ??= (async () => {
     const mod: WebZjsModule = await import(
-      // @ts-expect-error -- runtime URL, served from public/; typed via WebZjsModule
-      /* webpackIgnore: true */ '/webzjs/webzjs_wallet.js'
+      /* webpackIgnore: true */ `${WEBZJS_BASE_URL}/webzjs_wallet.js`
     );
-    await mod.default('/webzjs/webzjs_wallet_bg.wasm');
+    await mod.default(`${WEBZJS_BASE_URL}/webzjs_wallet_bg.wasm`);
     return mod;
   })();
   return webzjsModule;

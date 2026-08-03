@@ -17,3 +17,8 @@ packages/scaffold-zec/public/webzjs/
 
 # Local database
 packages/scaffold-zec/.data/
+
+# Cloudflare build and local state
+packages/scaffold-zec/.open-next/
+packages/scaffold-zec/.wrangler/
+packages/scaffold-zec/.dev.vars

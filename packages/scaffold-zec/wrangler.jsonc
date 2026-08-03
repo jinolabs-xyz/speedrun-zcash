@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "speedrun-zcash",
+  // Custom entry wrapping the OpenNext handler — serves /webzjs/* from R2
+  // and pins the COOP/COEP headers. See worker.ts.
+  "main": "worker.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // ChainSafe's public grpc-web proxy for testnet lightwalletd. zec.rocks
+    // directly does not work here: it only routes grpc-web on HTTP/2, and
+    // Workers subrequests go out over HTTP/1.1.
+    "LIGHTWALLETD_PROXY": "https://zcash-testnet.chainsafe.dev"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "speedrun-zcash",
+      "database_id": "83048c8d-8d1a-4f88-acf3-2849f380a75d"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      // OpenNext incremental cache (revalidate=30 on /api/chain-tip).
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "b45481aa561944bfaa7adde5c7a5b7db"
+    }
+  ]
+  // The 57 MB wasm is served from R2 (see worker.ts). Blocked until R2 is
+  // enabled on the account (dashboard: R2 > accept terms) and wrangler is
+  // re-logged-in with the r2 scope. Then:
+  //   npx wrangler r2 bucket create speedrun-zcash-webzjs
+  //   for f in vendor/webzjs-wallet/*; do npx wrangler r2 object put \
+  //     "speedrun-zcash-webzjs/$(basename "$f")" --file "$f"; done
+  //   (plus the snippets/ subtree, keeping relative paths)
+  // and uncomment:
+  "r2_buckets": [
+    { "binding": "WEBZJS", "bucket_name": "speedrun-zcash-webzjs" }
+  ]
+
+  // Secrets (set via `npx wrangler secret put`, never in this file):
+  //   SESSION_SECRET — signs builder session cookies
+}

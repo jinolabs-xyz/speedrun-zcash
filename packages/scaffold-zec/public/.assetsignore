@@ -1,0 +1,3 @@
+# Kept out of the Workers asset bundle: webzjs_wallet_bg.wasm is 57 MB and
+# the per-file cap is 25 MB. The worker serves /webzjs/* from R2 instead.
+webzjs

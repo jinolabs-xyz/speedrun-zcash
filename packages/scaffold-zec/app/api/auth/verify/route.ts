@@ -28,11 +28,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid request' }, { status: 400 });
   }
 
-  if (!consumeNonce(nonce, builderId)) {
+  if (!(await consumeNonce(nonce, builderId))) {
     return NextResponse.json({ error: 'nonce expired' }, { status: 401 });
   }
 
-  const publicKey = getBuilderPublicKey(builderId);
+  const publicKey = await getBuilderPublicKey(builderId);
   if (!publicKey) {
     return NextResponse.json({ error: 'unknown builder' }, { status: 401 });
   }
