@@ -282,6 +282,7 @@ export const challenges: Challenge[] = [
     status: 'live',
     level: 'foundations',
     skills: ['Block explorers', 'Compact blocks', 'Light client trust'],
+    embeddedWallet: false,
     codebase: {
       name: 'lightwalletd',
       repo: 'https://github.com/zcash/lightwalletd',
@@ -309,6 +310,7 @@ export const challenges: Challenge[] = [
         body: [
           'Find your shielded transaction from challenge #0 in the explorer. Here is everything it shows. The transaction exists, roughly when it was mined, and the fee. No sender, no receiver, no amount. Now look at any transparent transaction next to it, with addresses and amounts, all readable, linkable into a graph of who pays whom.',
           'Sit with that contrast for a minute. It is the whole reason this ecosystem exists.',
+          'The explorer to use is testnet.cipherscan.app. Paste a transaction id after /tx/ in the address bar and it shows you what the chain is willing to say about it, including which shielded pools the transaction touched.',
         ],
       },
     ],
@@ -317,28 +319,28 @@ export const challenges: Challenge[] = [
         id: 'find-tx',
         title: 'Find your own transaction',
         detail:
-          'Take the txid from your challenge #0 send and look it up in a testnet explorer. Confirm how little it reveals. You get existence, height, and fee, nothing else.',
+          'Take the txid from your challenge #0 send and open testnet.cipherscan.app/tx/ followed by that id. Confirm how little it reveals. You get existence, height, and fee, nothing else.',
         verification: 'attested',
       },
       {
         id: 'trace-transparent',
         title: 'Trace a transparent address',
         detail:
-          'Pick any t-address from a recent testnet block and follow its history, where its coins came from and where they went. You are building the surveillance graph privacy tech defends against.',
+          'Open a recent block in the explorer, find a transaction with a transparent address (they start with tm on testnet), and follow that address through its history, where its coins came from and where they went. You are building the surveillance graph privacy tech defends against, using nothing but a browser.',
         verification: 'attested',
       },
       {
         id: 'spot-v6',
         title: 'Spot the upgrade in the wild',
         detail:
-          'Find a recent transaction in version 6 format and an older one in version 5, and say what the newer one carries that the older does not. The answer is an Ironwood bundle sitting alongside the Orchard one. You have just read a network upgrade off the chain itself.',
+          'In the explorer, open a transaction mined this week and one from before the July upgrade, and compare which shielded pools each one lists. The recent one carries an Ironwood bundle the older one has no concept of. You have just read a network upgrade off the chain itself.',
         verification: 'attested',
       },
       {
         id: 'match-tip',
         title: 'Watch your wallet sync',
         detail:
-          'Open the wallet page, trigger a sync, and match the height it reports against the explorer’s chain tip. That gap is exactly what lightwalletd is serving your wallet, compact block by compact block.',
+          'Run "$DT wallet -w ~/zec-wallet sync" again in the wallet you built in challenge #0, watch the heights it scans, and match the height it finishes on against the chain tip the explorer shows. That gap is exactly what lightwalletd served your wallet, compact block by compact block.',
         verification: 'attested',
       },
     ],
