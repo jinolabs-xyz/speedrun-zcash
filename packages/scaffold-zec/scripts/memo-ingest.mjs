@@ -23,7 +23,7 @@ import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 
 const walletDir =
   process.env.CHALLENGE_WALLET_DIR ??
@@ -51,9 +51,8 @@ run(['wallet', '-w', walletDir, 'sync', '-s', 'zecrocks']);
 // full transactions so the 512-byte memos become readable.
 run(['wallet', '-w', walletDir, 'enhance', '-s', 'zecrocks']);
 
-const wallet = new Database(join(walletDir, 'data.sqlite'), {
-  readonly: true,
-  fileMustExist: true,
+const wallet = new DatabaseSync(join(walletDir, 'data.sqlite'), {
+  readOnly: true,
 });
 const rows = wallet
   .prepare(
@@ -124,10 +123,10 @@ if (remoteUrl) {
   process.exit(0);
 }
 
-const app = new Database(appDbPath);
+const app = new DatabaseSync(appDbPath);
 // The app may be serving requests while this runs; without a timeout a
 // write collision surfaces as an immediate SQLITE_BUSY throw.
-app.pragma('busy_timeout = 5000');
+app.exec('PRAGMA busy_timeout = 5000');
 // Standalone runs (fresh box, cron before first request) must not depend on
 // the app having connected once; same schema as server/db.ts.
 app.exec(
